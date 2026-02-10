@@ -6,13 +6,17 @@ import requests
 import io
 from PIL import Image, ImageTk
 
-# --- ตั้งค่าทรัพยากรเสียงเปียโนจริง ---
-# ดึงไฟล์เสียง .mp3 จากคลังเสียงเปียโนคุณภาพสูง
-SAMPLE_BASE_URL = "https://raw.githubusercontent.com/fuhton/piano-mp3/master/piano-mp3/"
+SAMPLE_BASE_URL = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 NOTES_MAPPING = {
-    'C': 'C4', 'C#': 'Db4', 'D': 'D4', 'D#': 'Eb4',
-    'E': 'E4', 'F': 'F4', 'F#': 'Gb4', 'G': 'G4',
-    'G#': 'Ab4', 'A': 'A4', 'A#': 'Bb4', 'B': 'B4'
+    'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
+    'E5': 'E5',   'F5': 'F5',    'F#5': 'Gb5', 'G5': 'G5',
+    'G#5': 'Ab5', 'A5': 'A5',    'A#5': 'Bb5', 'B5': 'B5',
+    'C4': 'C4', 'C#4': 'Db4', 'D4': 'D4', 'D#4': 'Eb4',
+    'E4': 'E4', 'F4': 'F4', 'F#4': 'Gb4', 'G4': 'G4',
+    'G#4': 'Ab4', 'A4': 'A4', 'A#4': 'Bb4', 'B4': 'B4',
+    'C3': 'C3',   'C#3': 'Db3',  'D3': 'D3',   'D#3': 'Eb3',
+    'E3': 'E3',   'F3': 'F3',    'F#3': 'Gb3', 'G3': 'G3',
+    'G#3': 'Ab3', 'A3': 'A3',    'A#3': 'Bb3', 'B3': 'B3',
 }
 
 class SplashScreen:
@@ -24,20 +28,16 @@ class SplashScreen:
         self.root.configure(bg='#1a1a1a')
         self.root.eval('tk::PlaceWindow . center')
         
-        # 1. แสดงโลโก้จาก URL
         self.img_url = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
         self.display_logo()
 
-        # 2. หัวข้อแอป
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), 
                  fg='#00ADB5', bg='#1a1a1a').pack(pady=10)
 
-        # 3. สถานะการโหลด (แก้บั๊กสีเรียบร้อย)
         self.label_status = tk.Label(self.root, text="กำลังเตรียมเสียงเปียโนระดับพรีเมียม...", 
                                      font=("Tahoma", 11), fg='white', bg='#1a1a1a')
         self.label_status.pack(pady=5)
 
-        # 4. เริ่มโหลดเพลงประกอบและเตรียมระบบ
         self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
         self.prepare_app()
 
@@ -53,16 +53,15 @@ class SplashScreen:
 
     def prepare_app(self):
         try:
-            # ปรับแต่ง mixer: frequency=44100 (standard), buffer=512 (low latency/clearer)
             pygame.mixer.pre_init(44100, -16, 2, 512)
             pygame.mixer.init()
             
-            # เล่นเพลง Startup
+     
             response = requests.get(self.audio_url, timeout=10)
             if response.status_code == 200:
                 audio_data = io.BytesIO(response.content)
                 pygame.mixer.music.load(audio_data)
-                pygame.mixer.music.set_volume(0.8) # ปรับความดังเพลงตอนเริ่ม
+                pygame.mixer.music.set_volume(0.8)
                 pygame.mixer.music.play()
                 
             if not os.path.exists('samples'):
@@ -88,104 +87,128 @@ class SplashScreen:
 class PianoApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Korn-ON! Piano - Pro Realistic")
-        self.root.geometry("850x500")
-        self.root.configure(bg='#121212') # Dark Mode
+        self.root.title("Korn-ON! Piano")
+        self.root.geometry("1250x500") 
+        self.root.configure(bg='#121212')
         
-        # ส่วน Header
-        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
+        tk.Label(self.root, text="KORN-ON! PIANO ", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=20)
 
-        # โหลดคลังเสียงเปียโน
         self.sounds = {}
         self.load_samples()
-
-        # เฟรมเปียโน
-        self.piano_container = tk.Frame(self.root, bg='#121212', width=750, height=250)
-        self.piano_container.pack(pady=20)
+        self.piano_container = tk.Frame(self.root, bg='#121212', height=300)
+        self.piano_container.pack(pady=20, fill=tk.X, expand=True)
 
         self.create_keys()
 
     def load_samples(self):
-        """โหลดไฟล์เสียงเปียโนจากเน็ตและตั้งค่าระดับเสียงสูงสุด"""
         for note_name, file_name in NOTES_MAPPING.items():
             sample_path = f"samples/{file_name}.mp3"
-            
             if not os.path.exists(sample_path):
                 try:
+                    if not os.path.exists('samples'):
+                        os.makedirs('samples')
+                        
                     url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
                     r = requests.get(url, timeout=5)
                     with open(sample_path, 'wb') as f:
                         f.write(r.content)
-                except:
-                    print(f"โหลดโน้ต {note_name} ไม่สำเร็จ")
+                except Exception as e:
+                    print(f"Error loading {note_name}: {e}")
             
             if os.path.exists(sample_path):
-                sound = pygame.mixer.Sound(sample_path)
-                # --- ตั้งค่าความดังที่นี่ (0.0 ถึง 1.0) ---
-                sound.set_volume(1.0) 
-                self.sounds[note_name] = sound
-            
-            if os.path.exists(sample_path):
-                self.sounds[note_name] = pygame.mixer.Sound(sample_path)
+                s = pygame.mixer.Sound(sample_path)
+                s.set_volume(1.0)
+                self.sounds[note_name] = s
 
     def create_keys(self):
-        # --- 1. การแมปปิ้งปุ่มกดสำหรับโน้ตขาว (A-S-D-F-G-H-J) ---
-        white_key_map = {
-            'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 
-            'g': 'G', 'h': 'A', 'j': 'B'
+        w_width = 50 
+        w_height = 200
+        b_width = 30   
+        b_height = 120
+        
+        white_notes_base = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+        black_notes_data = [('C#', 0.7, 'Db'), ('D#', 1.7, 'Eb'), ('F#', 3.7, 'Gb'), ('G#', 4.7, 'Ab'), ('A#', 5.7, 'Bb')]
+        
+        key_maps = {
+            3: { # Octave 3
+                'white': ['q', 'w', 'e', 'r', 't', 'y', 'u'],
+                'black': ['2', '3', '5', '6', '7']
+            },
+            4: { # Octave 4
+                'white': ['i', 'o', 'p', 'z', 'x', 'c', 'v'],
+                'black': ['9', '0', 's', 'd', 'f']        
+            },
+            5: { # Octave 5
+                'white': ['b', 'n', 'm', ',', '.', '/', ']'], 
+                'black': ['h', 'j', 'l', ';', "'"]      
+            }
         }
+     
+        total_offset_x = 50 
         
-        # --- 2. การแมปปิ้งปุ่มกดสำหรับโน้ตดำ/Sharp (W-E-T-Y-U) ---
-        # แมปปิ้งตามตำแหน่งปุ่มบนคีย์บอร์ดที่อยู่เยื้องขึ้นไปด้านบน
-        black_key_map = {
-            'w': 'C#', 'e': 'D#', 
-            't': 'F#', 'y': 'G#', 'u': 'A#'
-        }
-        
-        white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-        w_width, w_height = 70, 220
-        
-        # สร้างปุ่มขาวและ Binding
-        for i, key in enumerate(white_keys):
-            display_text = f"{key}\n({list(white_key_map.keys())[i].upper()})"
-            btn = tk.Button(self.piano_container, text=display_text, font=("Arial", 10, "bold"),
-                           bg='#F5F5F5', fg='#333', activebackground='#CCC',
-                           relief=tk.FLAT, anchor=tk.S, pady=15,
-                           command=lambda k=key: self.play_note(k))
-            btn.place(x=i * (w_width + 4), y=0, width=w_width, height=w_height)
+        for octave in [3, 4, 5]:
+            # (White Keys)
+            current_map = key_maps.get(octave, {'white': [], 'black': []})
             
-        # ผูกปุ่มคีย์บอร์ดสำหรับโน้ตขาว
-        for char, note in white_key_map.items():
-            self.root.bind(char, lambda e, k=note: self.play_note(k))
-            self.root.bind(char.upper(), lambda e, k=note: self.play_note(k))
+            for i, note in enumerate(white_notes_base):
+                note_name = f"{note}{octave}"
+                
+                # หาปุ่มคีย์บอร์ดที่จะแสดงผล
+                display_key = ""
+                if i < len(current_map['white']):
+                    display_key = current_map['white'][i].upper()
+                    # Bind Key
+                    self.root.bind(display_key.lower(), lambda e, n=note_name: self.play_note(n))
+                    self.root.bind(display_key.upper(), lambda e, n=note_name: self.play_note(n))
 
-        # --- 3. สร้างลิ่มโน้ตดำพร้อม Binding (W-E-T-Y-U) ---
-        black_keys_info = [
-            ('C#', 0.72, 'w'), ('D#', 1.72, 'e'), 
-            ('F#', 3.72, 't'), ('G#', 4.72, 'y'), ('A#', 5.72, 'u')
-        ]
-        b_width, b_height = 45, 135
+                text = f"{note}{octave}\n({display_key})"
+            
+                abs_x = total_offset_x + (i * (w_width + 2))
 
-        for key, pos, char in black_keys_info:
-            # แสดงชื่อโน้ตและปุ่มกด เช่น "C#\n(W)"
-            display_text = f"{key}\n({char.upper()})"
-            btn = tk.Button(self.piano_container, text=display_text, font=("Arial", 8, "bold"),
-                           bg='#222', fg='white', activebackground='#444',
-                           relief=tk.FLAT, anchor=tk.S, pady=10,
-                           command=lambda k=key: self.play_note(k))
-            
-            x_pos = pos * (w_width + 4)
-            btn.place(x=x_pos, y=0, width=b_width, height=b_height)
-            
-            # ผูกปุ่มคีย์บอร์ดสำหรับโน้ตดำ (เพิ่มส่วนนี้เข้ามาเพื่อให้กด Sharp ได้)
-            self.root.bind(char, lambda e, k=key: self.play_note(k))
-            self.root.bind(char.upper(), lambda e, k=key: self.play_note(k))
+                btn = tk.Button(self.piano_container, text=text, font=("Arial", 8, "bold"),
+                                bg='white', fg='black', activebackground='#ddd',
+                                relief=tk.RAISED, anchor=tk.S, pady=10,
+                                command=lambda n=note_name: self.play_note(n))
+                btn.place(x=abs_x, y=0, width=w_width, height=w_height)
+
+            # (Black Keys)
+            for note_char, pos_mult, alt_name in black_notes_data:
+                note_name = f"{note_char}{octave}"
+                
+                idx = 0
+                if note_char == 'C#': idx = 0
+                elif note_char == 'D#': idx = 1
+                elif note_char == 'F#': idx = 2
+                elif note_char == 'G#': idx = 3
+                elif note_char == 'A#': idx = 4
+                
+                display_key = ""
+                if idx < len(current_map['black']):
+                    display_key = current_map['black'][idx].upper()
+                    self.root.bind(display_key.lower(), lambda e, n=note_name: self.play_note(n))
+                    self.root.bind(display_key.upper(), lambda e, n=note_name: self.play_note(n))
+
+                text = f"{note_char}\n({display_key})"
+
+                abs_x = total_offset_x + (pos_mult * (w_width + 2)) - (b_width / 2) + 2
+
+                btn = tk.Button(self.piano_container, text=text, font=("Arial", 7, "bold"),
+                                bg='black', fg='white', activebackground='#333',
+                                relief=tk.RAISED, anchor=tk.S, pady=5,
+                                command=lambda n=note_name: self.play_note(n))
+                btn.place(x=abs_x, y=0, width=b_width, height=b_height)
+ 
+                btn.lift()
+
+            total_offset_x += (7 * (w_width + 2))
 
     def play_note(self, note):
         if note in self.sounds:
-            # ใช้ Sound.play() เพื่อให้เล่นซ้อนกันเป็นคอร์ดได้
+            self.sounds[note].stop() 
             self.sounds[note].play()
+        else:
+            print(f"Sound not found: {note}")
 
 def launch_app():
     main_root = tk.Tk()
