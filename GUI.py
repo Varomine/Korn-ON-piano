@@ -5,26 +5,52 @@ import os
 import numpy as np
 import requests
 import io
+from PIL import Image, ImageTk
 
 class SplashScreen:
     def __init__(self, root, on_finished):
         self.root = root
         self.on_finished = on_finished
         self.root.title("Korn-ON! Piano Loading...")
-        self.root.geometry("400x300")
+        self.root.geometry("500x500") # ขยายขนาดหน้าต่างเพื่อให้เห็นรูปชัดๆ
         self.root.configure(bg='#1a1a1a')
-        self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
-        self.play_startup_and_wait()
         
+        # จัดกึ่งกลางหน้าจอ
         self.root.eval('tk::PlaceWindow . center')
-        
-        tk.Label(self.root, text="🎹", font=("Arial", 60), bg='#1a1a1a').pack(pady=(50, 10))
-        tk.Label(self.root, text="Korn-ON! Piano", font=("Arial", 20, "bold"), 
-                 fg='white', bg='#1a1a1a').pack()
-        tk.Label(self.root, text="แอปสุดโหด 🎶", font=("Arial", 14),
-                 fg='#888', bg='#1a1a1a').pack(pady=20)
 
+        # --- ส่วนการโหลดรูปภาพจาก URL ---
+        self.img_url = "https://raw.githubusercontent.com/Varomine/Korn-ON-piano/refs/heads/main/images/122201.jpg"
+        self.display_logo()
+
+        tk.Label(self.root, text="Korn-ON! Piano", font=("Arial", 20, "bold"), 
+                 fg='white', bg='#1a1a1a').pack(pady=10)
+        tk.Label(self.root, text="แอปสุดโหด 🎶", font=("Arial", 14),
+                 fg='#888', bg='#1a1a1a').pack()
+
+        # --- ส่วนการโหลดเสียง ---
+        self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
+        # เรียกเล่นเสียง (เรียกครั้งเดียวพอครับ)
         self.play_startup_and_wait()
+
+    def display_logo(self):
+        try:
+            # ดึงข้อมูลภาพจาก URL
+            response = requests.get(self.img_url, timeout=10)
+            img_data = Image.open(io.BytesIO(response.content))
+            
+            # ปรับขนาดรูปให้พอดี (เช่น 250x250)
+            img_data = img_data.resize((250, 250), Image.Resampling.LANCZOS)
+            
+            # แปลงเป็น Format ที่ tkinter ใช้ได้
+            self.logo_img = ImageTk.PhotoImage(img_data)
+            
+            # สร้าง Label แสดงรูป
+            logo_label = tk.Label(self.root, image=self.logo_img, bg='#1a1a1a')
+            logo_label.pack(pady=(30, 10))
+        except Exception as e:
+            print(f"Error loading image: {e}")
+            # ถ้าโหลดรูปไม่สำเร็จ ให้แสดง Emoji แทนเหมือนเดิม
+            tk.Label(self.root, text="🎹", font=("Arial", 60), bg='#1a1a1a').pack(pady=30)
 
     def play_startup_and_wait(self):
         try:
@@ -34,62 +60,45 @@ class SplashScreen:
                 audio_data = io.BytesIO(response.content)
                 pygame.mixer.music.load(audio_data)
                 pygame.mixer.music.play()
-                
                 self.check_music_status()
             else:
-                print("ดาวน์โหลดเสียงไม่สำเร็จ")
                 self.root.after(2000, self.finish)
         except Exception as e:
             print(f"Internet Error: {e}")
-            self.root.after(2000, self.finish)
-        """try:
-            pygame.mixer.init()
-            current_dir = os.path.dirname(__file__)
-            sound_path = os.path.join(current_dir, "sound", "start.mp3")
-            
-            if os.path.exists(sound_path):
-                pygame.mixer.music.load(sound_path)
-                pygame.mixer.music.play()
-                # ตรวจสอบสถานะการเล่นเพลงทุกๆ 100 มิลลิวินาที
-                self.check_music_status()
-            else:
-                # ถ้าไม่เจอไฟล์เสียง ให้รอ 2 วินาทีแล้วเข้าแอปเลย
+            # ถ้ามีปัญหาเน็ต ให้รอแป๊บเดียวแล้วเข้าแอปเลย
+            if hasattr(self, 'root'): 
                 self.root.after(2000, self.finish)
-        except Exception as e:
-            print(f"Error: {e}")
-            self.finish()"""
 
     def check_music_status(self):
-        # ถ้าเพลงยังเล่นอยู่ (get_busy() เป็น True) ให้เช็คต่อgit
         if pygame.mixer.music.get_busy():
             self.root.after(100, self.check_music_status)
         else:
-            # ถ้าเพลงจบแล้ว ให้เข้าแอปหลัก
             self.finish()
 
     def finish(self):
-        self.root.destroy() # ทำลายหน้า SplashScreen
-        self.on_finished() # เรียก Callback เพื่อเปิดหน้าเปียโน
+        # ป้องกันการเรียกซ้ำถ้าหน้าต่างถูกทำลายไปแล้ว
+        try:
+            self.root.destroy()
+            self.on_finished()
+        except:
+            pass
 
+# --- ส่วนคลาส PianoApp และ launch_app คงเดิมตามโค้ดของคุณ ---
 class PianoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Korn-ON! Piano")
         self.root.geometry("800x400")
         self.root.configure(bg='#2c3e50')
-        
-        # ไม่ต้อง init mixer ซ้ำ เพราะทำจากหน้าโหลดแล้ว
         self.create_keys()
 
     def create_keys(self):
         title = tk.Label(self.root, text="🎹 Korn-ON! Piano", font=("Arial", 24, "bold"), 
                          bg='#2c3e50', fg='white')
         title.pack(pady=10)
-        
         frame = tk.Frame(self.root, bg='#2c3e50')
         frame.pack(pady=20)
-
-        # Black Keys
+        # ... (ปุ่มเปียโนเหมือนเดิม) ...
         black_keys = ['C#', 'D#', 'F#', 'G#', 'A#']
         black_frame = tk.Frame(frame, bg='#2c3e50')
         black_frame.pack()
@@ -98,8 +107,6 @@ class PianoApp:
                            activebackground='gray', command=lambda k=key: self.play_note(k))
             btn.pack(side=tk.LEFT, padx=1)
             self.root.bind(key.lower(), lambda e, k=key: self.play_note(k))
-
-        # White Keys
         white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
         white_frame = tk.Frame(frame, bg='#2c3e50')
         white_frame.pack()
@@ -133,13 +140,11 @@ class PianoApp:
         sound.play()
 
 def launch_app():
-    # ฟังก์ชันเปิดหน้าแอปหลัก
     main_root = tk.Tk()
     app = PianoApp(main_root)
     main_root.mainloop()
 
 if __name__ == "__main__":
-    # เริ่มต้นด้วย SplashScreen
     splash_root = tk.Tk()
     splash = SplashScreen(splash_root, launch_app)
     splash_root.mainloop()
