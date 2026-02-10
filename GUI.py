@@ -2,72 +2,72 @@ import tkinter as tk
 from tkinter import messagebox
 import pygame
 import os
-import numpy as np
 import requests
 import io
 from PIL import Image, ImageTk
+
+# --- ตั้งค่าทรัพยากรเสียงเปียโนจริง ---
+# ดึงไฟล์เสียง .mp3 จากคลังเสียงเปียโนคุณภาพสูง
+SAMPLE_BASE_URL = "https://raw.githubusercontent.com/fuhton/piano-mp3/master/piano-mp3/"
+NOTES_MAPPING = {
+    'C': 'C4', 'C#': 'Db4', 'D': 'D4', 'D#': 'Eb4',
+    'E': 'E4', 'F': 'F4', 'F#': 'Gb4', 'G': 'G4',
+    'G#': 'Ab4', 'A': 'A4', 'A#': 'Bb4', 'B': 'B4'
+}
 
 class SplashScreen:
     def __init__(self, root, on_finished):
         self.root = root
         self.on_finished = on_finished
         self.root.title("Korn-ON! Piano Loading...")
-        self.root.geometry("500x500") # ขยายขนาดหน้าต่างเพื่อให้เห็นรูปชัดๆ
+        self.root.geometry("500x550")
         self.root.configure(bg='#1a1a1a')
-        
-        # จัดกึ่งกลางหน้าจอ
         self.root.eval('tk::PlaceWindow . center')
-
-        # --- ส่วนการโหลดรูปภาพจาก URL ---
-        self.img_url = "https://raw.githubusercontent.com/Varomine/Korn-ON-piano/refs/heads/main/images/122201.jpg"
+        
+        # 1. แสดงโลโก้จาก URL
+        self.img_url = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
         self.display_logo()
 
-        tk.Label(self.root, text="Korn-ON! Piano", font=("Arial", 20, "bold"), 
-                 fg='white', bg='#1a1a1a').pack(pady=10)
-        tk.Label(self.root, text="แอปสุดโหด 🎶", font=("Arial", 14),
-                 fg='#888', bg='#1a1a1a').pack()
+        # 2. หัวข้อแอป
+        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), 
+                 fg='#00ADB5', bg='#1a1a1a').pack(pady=10)
 
-        # --- ส่วนการโหลดเสียง ---
+        # 3. สถานะการโหลด (แก้บั๊กสีเรียบร้อย)
+        self.label_status = tk.Label(self.root, text="กำลังเตรียมเสียงเปียโนระดับพรีเมียม...", 
+                                     font=("Tahoma", 11), fg='white', bg='#1a1a1a')
+        self.label_status.pack(pady=5)
+
+        # 4. เริ่มโหลดเพลงประกอบและเตรียมระบบ
         self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
-        # เรียกเล่นเสียง (เรียกครั้งเดียวพอครับ)
-        self.play_startup_and_wait()
+        self.prepare_app()
 
     def display_logo(self):
         try:
-            # ดึงข้อมูลภาพจาก URL
             response = requests.get(self.img_url, timeout=10)
             img_data = Image.open(io.BytesIO(response.content))
-            
-            # ปรับขนาดรูปให้พอดี (เช่น 250x250)
-            img_data = img_data.resize((250, 250), Image.Resampling.LANCZOS)
-            
-            # แปลงเป็น Format ที่ tkinter ใช้ได้
+            img_data = img_data.resize((280, 280), Image.Resampling.LANCZOS)
             self.logo_img = ImageTk.PhotoImage(img_data)
-            
-            # สร้าง Label แสดงรูป
-            logo_label = tk.Label(self.root, image=self.logo_img, bg='#1a1a1a')
-            logo_label.pack(pady=(30, 10))
-        except Exception as e:
-            print(f"Error loading image: {e}")
-            # ถ้าโหลดรูปไม่สำเร็จ ให้แสดง Emoji แทนเหมือนเดิม
-            tk.Label(self.root, text="🎹", font=("Arial", 60), bg='#1a1a1a').pack(pady=30)
+            tk.Label(self.root, image=self.logo_img, bg='#1a1a1a', bd=0).pack(pady=(30, 10))
+        except:
+            tk.Label(self.root, text="🎹", font=("Arial", 80), bg='#1a1a1a', fg='#00ADB5').pack(pady=40)
 
-    def play_startup_and_wait(self):
+    def prepare_app(self):
         try:
             pygame.mixer.init()
+            # เล่นเพลง Startup
             response = requests.get(self.audio_url, timeout=10)
             if response.status_code == 200:
                 audio_data = io.BytesIO(response.content)
                 pygame.mixer.music.load(audio_data)
                 pygame.mixer.music.play()
-                self.check_music_status()
-            else:
-                self.root.after(2000, self.finish)
-        except Exception as e:
-            print(f"Internet Error: {e}")
-            # ถ้ามีปัญหาเน็ต ให้รอแป๊บเดียวแล้วเข้าแอปเลย
-            if hasattr(self, 'root'): 
-                self.root.after(2000, self.finish)
+                
+            # สร้างโฟลเดอร์สำหรับเก็บเสียงตัวอย่างถ้ายังไม่มี
+            if not os.path.exists('samples'):
+                os.makedirs('samples')
+            
+            self.check_music_status()
+        except:
+            self.root.after(2000, self.finish)
 
     def check_music_status(self):
         if pygame.mixer.music.get_busy():
@@ -76,68 +76,88 @@ class SplashScreen:
             self.finish()
 
     def finish(self):
-        # ป้องกันการเรียกซ้ำถ้าหน้าต่างถูกทำลายไปแล้ว
         try:
             self.root.destroy()
             self.on_finished()
         except:
             pass
 
-# --- ส่วนคลาส PianoApp และ launch_app คงเดิมตามโค้ดของคุณ ---
 class PianoApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Korn-ON! Piano")
-        self.root.geometry("800x400")
-        self.root.configure(bg='#2c3e50')
+        self.root.title("Korn-ON! Piano - Pro Realistic")
+        self.root.geometry("850x500")
+        self.root.configure(bg='#121212') # Dark Mode
+        
+        # ส่วน Header
+        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
+                 bg='#121212', fg='#00ADB5').pack(pady=20)
+
+        # โหลดคลังเสียงเปียโน
+        self.sounds = {}
+        self.load_samples()
+
+        # เฟรมเปียโน
+        self.piano_container = tk.Frame(self.root, bg='#121212', width=750, height=250)
+        self.piano_container.pack(pady=20)
+
         self.create_keys()
 
+    def load_samples(self):
+        """โหลดไฟล์เสียงเปียโนจากเน็ตมาเก็บไว้ในเครื่อง (ถ้ายังไม่มี)"""
+        for note_name, file_name in NOTES_MAPPING.items():
+            sample_path = f"samples/{file_name}.mp3"
+            
+            if not os.path.exists(sample_path):
+                try:
+                    url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
+                    r = requests.get(url, timeout=5)
+                    with open(sample_path, 'wb') as f:
+                        f.write(r.content)
+                except:
+                    print(f"โหลดโน้ต {note_name} ไม่สำเร็จ")
+            
+            if os.path.exists(sample_path):
+                self.sounds[note_name] = pygame.mixer.Sound(sample_path)
+
     def create_keys(self):
-        title = tk.Label(self.root, text="🎹 Korn-ON! Piano", font=("Arial", 24, "bold"), 
-                         bg='#2c3e50', fg='white')
-        title.pack(pady=10)
-        frame = tk.Frame(self.root, bg='#2c3e50')
-        frame.pack(pady=20)
-        # ... (ปุ่มเปียโนเหมือนเดิม) ...
-        black_keys = ['C#', 'D#', 'F#', 'G#', 'A#']
-        black_frame = tk.Frame(frame, bg='#2c3e50')
-        black_frame.pack()
-        for key in black_keys:
-            btn = tk.Button(black_frame, text=key, width=6, height=5, bg='black', fg='white',
-                           activebackground='gray', command=lambda k=key: self.play_note(k))
-            btn.pack(side=tk.LEFT, padx=1)
-            self.root.bind(key.lower(), lambda e, k=key: self.play_note(k))
+        # 1. สร้างปุ่มขาว (White Keys)
         white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-        white_frame = tk.Frame(frame, bg='#2c3e50')
-        white_frame.pack()
-        for key in white_keys:
-            btn = tk.Button(white_frame, text=key, width=8, height=10, bg='white',
-                           activebackground='lightgray', command=lambda k=key: self.play_note(k))
-            btn.pack(side=tk.LEFT, padx=2)
+        w_width, w_height = 70, 220
+        
+        for i, key in enumerate(white_keys):
+            btn = tk.Button(self.piano_container, text=key, font=("Arial", 12, "bold"),
+                           bg='#F5F5F5', fg='#333', activebackground='#CCC',
+                           relief=tk.FLAT, anchor=tk.S, pady=15,
+                           command=lambda k=key: self.play_note(k))
+            
+            btn.place(x=i * (w_width + 4), y=0, width=w_width, height=w_height)
             self.root.bind(key.lower(), lambda e, k=key: self.play_note(k))
+
+        # 2. สร้างปุ่มดำ (Black Keys) - วางแทรกกึ่งกลางระหว่างปุ่มขาว
+        # ใช้ตำแหน่ง 0.75, 1.75... เพื่อให้ปุ่มดำอยู่ระหว่างช่อง
+        black_keys_info = [
+            ('C#', 0.72), ('D#', 1.72), 
+            ('F#', 3.72), ('G#', 4.72), ('A#', 5.72)
+        ]
+        b_width, b_height = 45, 135
+
+        for key, pos in black_keys_info:
+            btn = tk.Button(self.piano_container, text=key, font=("Arial", 9, "bold"),
+                           bg='#222', fg='white', activebackground='#444',
+                           relief=tk.FLAT, anchor=tk.S, pady=10,
+                           command=lambda k=key: self.play_note(k))
+            
+            x_pos = pos * (w_width + 4)
+            btn.place(x=x_pos, y=0, width=b_width, height=b_height)
+            
+            # การตั้งค่าปุ่มลัด (เช่น C# กด c)
+            self.root.bind(key[0].lower(), lambda e, k=key: self.play_note(k))
 
     def play_note(self, note):
-        try:
-            freq = self.get_frequency(note)
-            self.generate_sound(freq)
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not play note: {e}")
-
-    def get_frequency(self, note):
-        frequencies = {
-            'C': 261.63, 'D': 293.66, 'E': 329.63, 'F': 349.23,
-            'G': 391.99, 'A': 440.00, 'B': 493.88,
-            'C#': 277.18, 'D#': 311.13, 'F#': 369.99, 'G#': 415.30, 'A#': 466.16
-        }
-        return frequencies.get(note, 440)
-
-    def generate_sound(self, frequency, duration=0.5):
-        sample_rate = 22050
-        frames = int(duration * sample_rate)
-        arr = np.sin(2.0 * np.pi * frequency * np.linspace(0, duration, frames)).astype(np.float32)
-        arr_stereo = np.column_stack((arr, arr))
-        sound = pygame.sndarray.make_sound((arr_stereo * 32767).astype(np.int16))
-        sound.play()
+        if note in self.sounds:
+            # ใช้ Sound.play() เพื่อให้เล่นซ้อนกันเป็นคอร์ดได้
+            self.sounds[note].play()
 
 def launch_app():
     main_root = tk.Tk()
