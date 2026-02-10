@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
+link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
 SAMPLE_BASE_URL = link1
 NOTES_MAPPING = {
     'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
@@ -119,9 +120,13 @@ class PianoApp:
         self.rb_guitar = tk.Radiobutton(self.control_frame, text="Guitar", 
                                       variable=self.instrument_var, value="Guitar", 
                                       command=self.change_instrument, **rb_style)
+        self.rb_poon = tk.Radiobutton(self.control_frame, text="Poon", 
+                                      variable=self.instrument_var, value="Poon", 
+                                      command=self.change_instrument, **rb_style)
 
-        self.rb_piano.pack(side=tk.LEFT, padx=20)
-        self.rb_guitar.pack(side=tk.LEFT, padx=20)
+        self.rb_piano.pack(side=tk.LEFT, padx=15)
+        self.rb_guitar.pack(side=tk.LEFT, padx=15)
+        self.rb_poon.pack(side=tk.LEFT, padx=15)
 
         # Status Label to show loading state
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
@@ -145,6 +150,8 @@ class PianoApp:
             SAMPLE_BASE_URL = link1
         elif selection == "Guitar":
             SAMPLE_BASE_URL = link2
+        elif selection == "Poon":
+            SAMPLE_BASE_URL = link3
             
         # Update status
         self.status_label.config(text=f"Loading {selection} sounds... please wait.")
