@@ -3,6 +3,8 @@ from tkinter import messagebox
 import pygame
 import os
 import numpy as np
+import requests
+import io
 
 class SplashScreen:
     def __init__(self, root, on_finished):
@@ -11,22 +13,36 @@ class SplashScreen:
         self.root.title("Korn-ON! Piano Loading...")
         self.root.geometry("400x300")
         self.root.configure(bg='#1a1a1a')
+        self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
+        self.play_startup_and_wait()
         
-        # ทำให้หน้าโหลดอยู่กึ่งกลางหน้าจอ
         self.root.eval('tk::PlaceWindow . center')
         
-        # ใส่ชื่อแอปในหน้าโหลด
         tk.Label(self.root, text="🎹", font=("Arial", 60), bg='#1a1a1a').pack(pady=(50, 10))
         tk.Label(self.root, text="Korn-ON! Piano", font=("Arial", 20, "bold"), 
                  fg='white', bg='#1a1a1a').pack()
-        tk.Label(self.root, text="Loading your musical experience...", 
+        tk.Label(self.root, text="แอปสุดโหด 🎶", font=("Arial", 14),
                  fg='#888', bg='#1a1a1a').pack(pady=20)
 
-        # เริ่มเล่นเพลง Startup
         self.play_startup_and_wait()
 
     def play_startup_and_wait(self):
         try:
+            pygame.mixer.init()
+            response = requests.get(self.audio_url, timeout=10)
+            if response.status_code == 200:
+                audio_data = io.BytesIO(response.content)
+                pygame.mixer.music.load(audio_data)
+                pygame.mixer.music.play()
+                
+                self.check_music_status()
+            else:
+                print("ดาวน์โหลดเสียงไม่สำเร็จ")
+                self.root.after(2000, self.finish)
+        except Exception as e:
+            print(f"Internet Error: {e}")
+            self.root.after(2000, self.finish)
+        """try:
             pygame.mixer.init()
             current_dir = os.path.dirname(__file__)
             sound_path = os.path.join(current_dir, "sound", "start.mp3")
@@ -41,7 +57,7 @@ class SplashScreen:
                 self.root.after(2000, self.finish)
         except Exception as e:
             print(f"Error: {e}")
-            self.finish()
+            self.finish()"""
 
     def check_music_status(self):
         # ถ้าเพลงยังเล่นอยู่ (get_busy() เป็น True) ให้เช็คต่อgit
