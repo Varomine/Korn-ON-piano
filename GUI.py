@@ -180,7 +180,7 @@ class PianoApp:
                         with open(sample_path, 'wb') as f:
                             f.write(r.content)
                     else:
-                        tk.messagebox.showerror("Download Error", f"Failed to download {url}\nStatus : {r.status_code}")
+                        messagebox.showerror("Download Error", f"Failed to download {url}\n\n\nStatus : {r.status_code}")
                         break
                     
                 except Exception as e:
