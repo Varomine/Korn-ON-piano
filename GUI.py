@@ -6,7 +6,9 @@ import requests
 import io
 from PIL import Image, ImageTk
 
-SAMPLE_BASE_URL = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
+link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
+link2 = "https://github.com/Varomine/Korn-ON-piano/tree/sound/Guitar"
+SAMPLE_BASE_URL = link1
 NOTES_MAPPING = {
     'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
     'E5': 'E5',   'F5': 'F5',    'F#5': 'Gb5', 'G5': 'G5',
