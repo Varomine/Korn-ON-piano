@@ -53,15 +53,18 @@ class SplashScreen:
 
     def prepare_app(self):
         try:
+            # ปรับแต่ง mixer: frequency=44100 (standard), buffer=512 (low latency/clearer)
+            pygame.mixer.pre_init(44100, -16, 2, 512)
             pygame.mixer.init()
+            
             # เล่นเพลง Startup
             response = requests.get(self.audio_url, timeout=10)
             if response.status_code == 200:
                 audio_data = io.BytesIO(response.content)
                 pygame.mixer.music.load(audio_data)
+                pygame.mixer.music.set_volume(0.8) # ปรับความดังเพลงตอนเริ่ม
                 pygame.mixer.music.play()
                 
-            # สร้างโฟลเดอร์สำหรับเก็บเสียงตัวอย่างถ้ายังไม่มี
             if not os.path.exists('samples'):
                 os.makedirs('samples')
             
@@ -104,7 +107,7 @@ class PianoApp:
         self.create_keys()
 
     def load_samples(self):
-        """โหลดไฟล์เสียงเปียโนจากเน็ตมาเก็บไว้ในเครื่อง (ถ้ายังไม่มี)"""
+        """โหลดไฟล์เสียงเปียโนจากเน็ตและตั้งค่าระดับเสียงสูงสุด"""
         for note_name, file_name in NOTES_MAPPING.items():
             sample_path = f"samples/{file_name}.mp3"
             
@@ -118,41 +121,63 @@ class PianoApp:
                     print(f"โหลดโน้ต {note_name} ไม่สำเร็จ")
             
             if os.path.exists(sample_path):
+                sound = pygame.mixer.Sound(sample_path)
+                # --- ตั้งค่าความดังที่นี่ (0.0 ถึง 1.0) ---
+                sound.set_volume(1.0) 
+                self.sounds[note_name] = sound
+            
+            if os.path.exists(sample_path):
                 self.sounds[note_name] = pygame.mixer.Sound(sample_path)
 
     def create_keys(self):
-        # 1. สร้างปุ่มขาว (White Keys)
+        # --- 1. กำหนดปุ่มกดคีย์บอร์ดสำหรับโน้ตขาว (A-S-D-F-G-H-J) ---
+        # ใช้ Dictionary เพื่อจับคู่ว่ากดปุ่มอักษรไหนบนคอมพิวเตอร์ แล้วจะให้เสียงโน้ตอะไร
+        white_key_map = {
+            'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 
+            'g': 'G', 'h': 'A', 'j': 'B'
+        }
+        
         white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-        w_width, w_height = 70, 220
+        w_width, w_height = 70, 220 # กำหนดความกว้างและความสูงของลิ่มเปียโนขาว
         
         for i, key in enumerate(white_keys):
-            btn = tk.Button(self.piano_container, text=key, font=("Arial", 12, "bold"),
+            # สร้างปุ่มกด (Button) บนหน้าจอ
+            # เพิ่มชื่อปุ่มคีย์บอร์ดลงในชื่อปุ่มด้วย (เช่น "C (A)") เพื่อให้ผู้เล่นไม่หลงปุ่ม
+            display_text = f"{key}\n({list(white_key_map.keys())[i].upper()})"
+            
+            btn = tk.Button(self.piano_container, text=display_text, font=("Arial", 10, "bold"),
                            bg='#F5F5F5', fg='#333', activebackground='#CCC',
                            relief=tk.FLAT, anchor=tk.S, pady=15,
-                           command=lambda k=key: self.play_note(k))
+                           command=lambda k=key: self.play_note(k)) # เมื่อคลิกเมาส์ให้เล่นโน้ตนั้นๆ
             
+            # วางตำแหน่งปุ่มเรียงต่อกันตามแนวนอน
             btn.place(x=i * (w_width + 4), y=0, width=w_width, height=w_height)
-            self.root.bind(key.lower(), lambda e, k=key: self.play_note(k))
+            
+        # --- ส่วนการผูกปุ่มคีย์บอร์ด (Keyboard Binding) ---
+        # วนลูปเพื่อสั่งให้โปรแกรม "ดักฟัง" การกดปุ่มบนคีย์บอร์ดตามที่เราตั้งค่าไว้ใน white_key_map
+        for char, note in white_key_map.items():
+            # ผูกทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่ เพื่อให้กดได้ลื่นไหลไม่ว่าจะเปิด Caps Lock หรือไม่
+            self.root.bind(char, lambda e, k=note: self.play_note(k))
+            self.root.bind(char.upper(), lambda e, k=note: self.play_note(k))
 
-        # 2. สร้างปุ่มดำ (Black Keys) - วางแทรกกึ่งกลางระหว่างปุ่มขาว
-        # ใช้ตำแหน่ง 0.75, 1.75... เพื่อให้ปุ่มดำอยู่ระหว่างช่อง
+        # --- 2. สร้างลิ่มโน้ตดำ (แสดงผลสวยงาม - ไม่มีการผูกปุ่มคีย์บอร์ด) ---
+        # ข้อมูลโน้ต Sharp (#) และตำแหน่งการวาง (ใช้ค่าตำแหน่งเยื้องระหว่างปุ่มขาว)
         black_keys_info = [
             ('C#', 0.72), ('D#', 1.72), 
             ('F#', 3.72), ('G#', 4.72), ('A#', 5.72)
         ]
-        b_width, b_height = 45, 135
+        b_width, b_height = 45, 135 # ลิ่มโน้ตดำจะมีขนาดสั้นและแคบกว่า
 
         for key, pos in black_keys_info:
-            btn = tk.Button(self.piano_container, text=key, font=("Arial", 9, "bold"),
+            # สร้างปุ่มโน้ตดำ
+            btn = tk.Button(self.piano_container, text=key, font=("Arial", 8, "bold"),
                            bg='#222', fg='white', activebackground='#444',
                            relief=tk.FLAT, anchor=tk.S, pady=10,
-                           command=lambda k=key: self.play_note(k))
+                           command=lambda k=key: self.play_note(k)) # เล่นเสียงได้เฉพาะการใช้เมาส์คลิก
             
+            # คำนวณตำแหน่ง x เพื่อให้ปุ่มดำวางอยู่กึ่งกลางระหว่างปุ่มขาวอย่างสวยงาม
             x_pos = pos * (w_width + 4)
             btn.place(x=x_pos, y=0, width=b_width, height=b_height)
-            
-            # การตั้งค่าปุ่มลัด (เช่น C# กด c)
-            self.root.bind(key[0].lower(), lambda e, k=key: self.play_note(k))
 
     def play_note(self, note):
         if note in self.sounds:
