@@ -130,54 +130,57 @@ class PianoApp:
                 self.sounds[note_name] = pygame.mixer.Sound(sample_path)
 
     def create_keys(self):
-        # --- 1. กำหนดปุ่มกดคีย์บอร์ดสำหรับโน้ตขาว (A-S-D-F-G-H-J) ---
-        # ใช้ Dictionary เพื่อจับคู่ว่ากดปุ่มอักษรไหนบนคอมพิวเตอร์ แล้วจะให้เสียงโน้ตอะไร
+        # --- 1. การแมปปิ้งปุ่มกดสำหรับโน้ตขาว (A-S-D-F-G-H-J) ---
         white_key_map = {
             'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 
             'g': 'G', 'h': 'A', 'j': 'B'
         }
         
-        white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-        w_width, w_height = 70, 220 # กำหนดความกว้างและความสูงของลิ่มเปียโนขาว
+        # --- 2. การแมปปิ้งปุ่มกดสำหรับโน้ตดำ/Sharp (W-E-T-Y-U) ---
+        # แมปปิ้งตามตำแหน่งปุ่มบนคีย์บอร์ดที่อยู่เยื้องขึ้นไปด้านบน
+        black_key_map = {
+            'w': 'C#', 'e': 'D#', 
+            't': 'F#', 'y': 'G#', 'u': 'A#'
+        }
         
+        white_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+        w_width, w_height = 70, 220
+        
+        # สร้างปุ่มขาวและ Binding
         for i, key in enumerate(white_keys):
-            # สร้างปุ่มกด (Button) บนหน้าจอ
-            # เพิ่มชื่อปุ่มคีย์บอร์ดลงในชื่อปุ่มด้วย (เช่น "C (A)") เพื่อให้ผู้เล่นไม่หลงปุ่ม
             display_text = f"{key}\n({list(white_key_map.keys())[i].upper()})"
-            
             btn = tk.Button(self.piano_container, text=display_text, font=("Arial", 10, "bold"),
                            bg='#F5F5F5', fg='#333', activebackground='#CCC',
                            relief=tk.FLAT, anchor=tk.S, pady=15,
-                           command=lambda k=key: self.play_note(k)) # เมื่อคลิกเมาส์ให้เล่นโน้ตนั้นๆ
-            
-            # วางตำแหน่งปุ่มเรียงต่อกันตามแนวนอน
+                           command=lambda k=key: self.play_note(k))
             btn.place(x=i * (w_width + 4), y=0, width=w_width, height=w_height)
             
-        # --- ส่วนการผูกปุ่มคีย์บอร์ด (Keyboard Binding) ---
-        # วนลูปเพื่อสั่งให้โปรแกรม "ดักฟัง" การกดปุ่มบนคีย์บอร์ดตามที่เราตั้งค่าไว้ใน white_key_map
+        # ผูกปุ่มคีย์บอร์ดสำหรับโน้ตขาว
         for char, note in white_key_map.items():
-            # ผูกทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่ เพื่อให้กดได้ลื่นไหลไม่ว่าจะเปิด Caps Lock หรือไม่
             self.root.bind(char, lambda e, k=note: self.play_note(k))
             self.root.bind(char.upper(), lambda e, k=note: self.play_note(k))
 
-        # --- 2. สร้างลิ่มโน้ตดำ (แสดงผลสวยงาม - ไม่มีการผูกปุ่มคีย์บอร์ด) ---
-        # ข้อมูลโน้ต Sharp (#) และตำแหน่งการวาง (ใช้ค่าตำแหน่งเยื้องระหว่างปุ่มขาว)
+        # --- 3. สร้างลิ่มโน้ตดำพร้อม Binding (W-E-T-Y-U) ---
         black_keys_info = [
-            ('C#', 0.72), ('D#', 1.72), 
-            ('F#', 3.72), ('G#', 4.72), ('A#', 5.72)
+            ('C#', 0.72, 'w'), ('D#', 1.72, 'e'), 
+            ('F#', 3.72, 't'), ('G#', 4.72, 'y'), ('A#', 5.72, 'u')
         ]
-        b_width, b_height = 45, 135 # ลิ่มโน้ตดำจะมีขนาดสั้นและแคบกว่า
+        b_width, b_height = 45, 135
 
-        for key, pos in black_keys_info:
-            # สร้างปุ่มโน้ตดำ
-            btn = tk.Button(self.piano_container, text=key, font=("Arial", 8, "bold"),
+        for key, pos, char in black_keys_info:
+            # แสดงชื่อโน้ตและปุ่มกด เช่น "C#\n(W)"
+            display_text = f"{key}\n({char.upper()})"
+            btn = tk.Button(self.piano_container, text=display_text, font=("Arial", 8, "bold"),
                            bg='#222', fg='white', activebackground='#444',
                            relief=tk.FLAT, anchor=tk.S, pady=10,
-                           command=lambda k=key: self.play_note(k)) # เล่นเสียงได้เฉพาะการใช้เมาส์คลิก
+                           command=lambda k=key: self.play_note(k))
             
-            # คำนวณตำแหน่ง x เพื่อให้ปุ่มดำวางอยู่กึ่งกลางระหว่างปุ่มขาวอย่างสวยงาม
             x_pos = pos * (w_width + 4)
             btn.place(x=x_pos, y=0, width=b_width, height=b_height)
+            
+            # ผูกปุ่มคีย์บอร์ดสำหรับโน้ตดำ (เพิ่มส่วนนี้เข้ามาเพื่อให้กด Sharp ได้)
+            self.root.bind(char, lambda e, k=key: self.play_note(k))
+            self.root.bind(char.upper(), lambda e, k=key: self.play_note(k))
 
     def play_note(self, note):
         if note in self.sounds:
