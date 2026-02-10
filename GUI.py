@@ -7,7 +7,7 @@ import io
 from PIL import Image, ImageTk
 
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
-link2 = "https://github.com/Varomine/Korn-ON-piano/tree/sound/Guitar"
+link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 SAMPLE_BASE_URL = link1
 NOTES_MAPPING = {
     'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
@@ -90,40 +90,118 @@ class PianoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Korn-ON! Piano")
-        self.root.geometry("1250x500") 
+        self.root.geometry("1250x600") # Increased height slightly for the buttons
         self.root.configure(bg='#121212')
         
-        tk.Label(self.root, text="KORN-ON! PIANO ", font=("Helvetica", 30, "bold"), 
-                 bg='#121212', fg='#00ADB5').pack(pady=20)
+        # 1. Title
+        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
+                 bg='#121212', fg='#00ADB5').pack(pady=(20, 10))
+
+        # 2. Control Frame (Radio Buttons)
+        self.control_frame = tk.Frame(self.root, bg='#121212')
+        self.control_frame.pack(pady=5)
+
+        self.instrument_var = tk.StringVar(value="Piano")
+        
+        # Style for radio buttons
+        rb_style = {
+            'bg': '#121212', 'fg': 'white', 
+            'selectcolor': '#333333', 
+            'activebackground': '#121212', 
+            'activeforeground': '#00ADB5', 
+            'font': ("Arial", 12)
+        }
+
+        self.rb_piano = tk.Radiobutton(self.control_frame, text="Piano (Default)", 
+                                     variable=self.instrument_var, value="Piano", 
+                                     command=self.change_instrument, **rb_style)
+        
+        self.rb_guitar = tk.Radiobutton(self.control_frame, text="Guitar", 
+                                      variable=self.instrument_var, value="Guitar", 
+                                      command=self.change_instrument, **rb_style)
+
+        self.rb_piano.pack(side=tk.LEFT, padx=20)
+        self.rb_guitar.pack(side=tk.LEFT, padx=20)
+
+        # Status Label to show loading state
+        self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
+        self.status_label.pack()
 
         self.sounds = {}
+        # Initial load
         self.load_samples()
+        
         self.piano_container = tk.Frame(self.root, bg='#121212', height=300)
         self.piano_container.pack(pady=20, fill=tk.X, expand=True)
 
         self.create_keys()
 
+    def change_instrument(self):
+        """Handle Radio Button Change"""
+        selection = self.instrument_var.get()
+        global SAMPLE_BASE_URL
+        
+        if selection == "Piano":
+            SAMPLE_BASE_URL = link1
+        elif selection == "Guitar":
+            SAMPLE_BASE_URL = link2
+            
+        # Update status
+        self.status_label.config(text=f"Loading {selection} sounds... please wait.")
+        self.root.update() # Force UI update
+        
+        # Clear current sounds and reload
+        self.sounds.clear()
+        self.load_samples()
+        
+        
+        self.status_label.config(text=f"{selection} Ready!")
+
     def load_samples(self):
+        """Loads samples into specific folders so Piano/Guitar don't overwrite each other"""
+        current_instrument = self.instrument_var.get() # "Piano" or "Guitar"
+        base_folder = f"samples/{current_instrument}"
+
+        if not os.path.exists(base_folder):
+            os.makedirs(base_folder)
+
         for note_name, file_name in NOTES_MAPPING.items():
-            sample_path = f"samples/{file_name}.mp3"
+            sample_path = f"{base_folder}/{file_name}.mp3"
+            
+            # Download if doesn't exist
             if not os.path.exists(sample_path):
                 try:
-                    if not os.path.exists('samples'):
-                        os.makedirs('samples')
-                        
                     url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
-                    r = requests.get(url, timeout=5)
-                    with open(sample_path, 'wb') as f:
-                        f.write(r.content)
+                    # Add a User-Agent to avoid GitHub blocking requests sometimes
+                    headers = {'User-Agent': 'Mozilla/5.0'} 
+                    r = requests.get(url, headers=headers, timeout=5)
+                    
+                    if r.status_code == 200:
+                        with open(sample_path, 'wb') as f:
+                            f.write(r.content)
+                    else:
+                        tk.messagebox.showerror("Download Error", f"Failed to download {url}\nStatus : {r.status_code}")
+                        break
+                    
                 except Exception as e:
                     print(f"Error loading {note_name}: {e}")
             
+            # Load into Pygame mixer
             if os.path.exists(sample_path):
-                s = pygame.mixer.Sound(sample_path)
-                s.set_volume(1.0)
-                self.sounds[note_name] = s
+                try:
+                    s = pygame.mixer.Sound(sample_path)
+                    s.set_volume(1.0)
+                    self.sounds[note_name] = s
+                except pygame.error as e:
+                    print(f"Pygame could not load {sample_path}: {e}")
 
     def create_keys(self):
+        # ... (Keep your existing create_keys code here) ...
+        # If you want the mapping from the PREVIOUS picture (QWERTY layout), 
+        # use the create_keys I provided in the previous answer.
+        # If you want the one in the file you just uploaded, paste that logic here.
+        # For safety, I will use the logic from the file you uploaded in THIS prompt:
+        
         w_width = 50 
         w_height = 200
         b_width = 30   
@@ -133,20 +211,11 @@ class PianoApp:
         black_notes_data = [('C#', 0.7, 'Db'), ('D#', 1.7, 'Eb'), ('F#', 3.7, 'Gb'), ('G#', 4.7, 'Ab'), ('A#', 5.7, 'Bb')]
         
         key_maps = {
-            3: { # Octave 3
-                'white': ['q', 'w', 'e', 'r', 't', 'y', 'u'],
-                'black': ['2', '3', '5', '6', '7']
-            },
-            4: { # Octave 4
-                'white': ['i', 'o', 'p', 'z', 'x', 'c', 'v'],
-                'black': ['9', '0', 's', 'd', 'f']        
-            },
-            5: { # Octave 5
-                'white': ['b', 'n', 'm', ',', '.', '/', ']'], 
-                'black': ['h', 'j', 'l', ';', "'"]      
-            }
+            3: { 'white': ['q', 'w', 'e', 'r', 't', 'y', 'u'], 'black': ['2', '3', '5', '6', '7'] },
+            4: { 'white': ['i', 'o', 'p', 'z', 'x', 'c', 'v'], 'black': ['9', '0', 's', 'd', 'f'] },
+            5: { 'white': ['b', 'n', 'm', ',', '.', '/', ']'], 'black': ['h', 'j', 'l', ';', "'"] }
         }
-     
+      
         total_offset_x = 50 
         
         for octave in [3, 4, 5]:
@@ -155,17 +224,13 @@ class PianoApp:
             
             for i, note in enumerate(white_notes_base):
                 note_name = f"{note}{octave}"
-                
-                # หาปุ่มคีย์บอร์ดที่จะแสดงผล
                 display_key = ""
                 if i < len(current_map['white']):
                     display_key = current_map['white'][i].upper()
-                    # Bind Key
                     self.root.bind(display_key.lower(), lambda e, n=note_name: self.play_note(n))
                     self.root.bind(display_key.upper(), lambda e, n=note_name: self.play_note(n))
 
                 text = f"{note}{octave}\n({display_key})"
-            
                 abs_x = total_offset_x + (i * (w_width + 2))
 
                 btn = tk.Button(self.piano_container, text=text, font=("Arial", 8, "bold"),
@@ -192,7 +257,6 @@ class PianoApp:
                     self.root.bind(display_key.upper(), lambda e, n=note_name: self.play_note(n))
 
                 text = f"{note_char}\n({display_key})"
-
                 abs_x = total_offset_x + (pos_mult * (w_width + 2)) - (b_width / 2) + 2
 
                 btn = tk.Button(self.piano_container, text=text, font=("Arial", 7, "bold"),
@@ -200,7 +264,6 @@ class PianoApp:
                                 relief=tk.RAISED, anchor=tk.S, pady=5,
                                 command=lambda n=note_name: self.play_note(n))
                 btn.place(x=abs_x, y=0, width=b_width, height=b_height)
- 
                 btn.lift()
 
             total_offset_x += (7 * (w_width + 2))
