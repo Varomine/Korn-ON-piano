@@ -1,3 +1,6 @@
 # Korn-ON-piano
 
-This thing is just a stupid thing just ignore it
+pip install requests
+pip install pygame
+pip install numpy
+pip install Pillow
