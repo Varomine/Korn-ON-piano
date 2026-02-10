@@ -6,9 +6,12 @@ import requests
 import io
 from PIL import Image, ImageTk
 
+# Configuration Links
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
+ICON_URL = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
+
 SAMPLE_BASE_URL = link1
 NOTES_MAPPING = {
     'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
@@ -31,7 +34,7 @@ class SplashScreen:
         self.root.configure(bg='#1a1a1a')
         self.root.eval('tk::PlaceWindow . center')
         
-        self.img_url = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
+        self.img_url = ICON_URL # ใช้ลิงก์เดียวกัน
         self.display_logo()
 
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), 
@@ -48,10 +51,17 @@ class SplashScreen:
         try:
             response = requests.get(self.img_url, timeout=10)
             img_data = Image.open(io.BytesIO(response.content))
-            img_data = img_data.resize((280, 280), Image.Resampling.LANCZOS)
-            self.logo_img = ImageTk.PhotoImage(img_data)
+            
+            # เก็บรูปต้นฉบับไว้ทำ Icon
+            self.icon_image = ImageTk.PhotoImage(img_data)
+            self.root.iconphoto(False, self.icon_image) # <-- ตั้งค่าไอคอนตรงนี้
+
+            # ย่อรูปเพื่อแสดงโลโก้ตรงกลาง
+            img_resized = img_data.resize((280, 280), Image.Resampling.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(img_resized)
             tk.Label(self.root, image=self.logo_img, bg='#1a1a1a', bd=0).pack(pady=(30, 10))
-        except:
+        except Exception as e:
+            print(f"Error loading logo: {e}")
             tk.Label(self.root, text="🎹", font=("Arial", 80), bg='#1a1a1a', fg='#00ADB5').pack(pady=40)
 
     def prepare_app(self):
@@ -59,7 +69,6 @@ class SplashScreen:
             pygame.mixer.pre_init(44100, -16, 2, 512)
             pygame.mixer.init()
             
-     
             response = requests.get(self.audio_url, timeout=10)
             if response.status_code == 200:
                 audio_data = io.BytesIO(response.content)
@@ -91,9 +100,12 @@ class PianoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Korn-ON! Piano")
-        self.root.geometry("1250x600") # Increased height slightly for the buttons
+        self.root.geometry("1250x600")
         self.root.configure(bg='#121212')
         
+        # ตั้งค่าไอคอนแอป
+        self.set_app_icon()
+
         # 1. Title
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=(20, 10))
@@ -141,6 +153,17 @@ class PianoApp:
 
         self.create_keys()
 
+    def set_app_icon(self):
+        """ฟังก์ชันสำหรับโหลดและตั้งค่าไอคอน"""
+        try:
+            response = requests.get(ICON_URL, timeout=5)
+            if response.status_code == 200:
+                img_data = Image.open(io.BytesIO(response.content))
+                self.app_icon = ImageTk.PhotoImage(img_data)
+                self.root.iconphoto(False, self.app_icon)
+        except Exception as e:
+            print(f"Could not set app icon: {e}")
+
     def change_instrument(self):
         """Handle Radio Button Change"""
         selection = self.instrument_var.get()
@@ -161,12 +184,11 @@ class PianoApp:
         self.sounds.clear()
         self.load_samples()
         
-        
         self.status_label.config(text=f"{selection} Ready!")
 
     def load_samples(self):
         """Loads samples into specific folders so Piano/Guitar don't overwrite each other"""
-        current_instrument = self.instrument_var.get() # "Piano" or "Guitar"
+        current_instrument = self.instrument_var.get()
         base_folder = f"samples/{current_instrument}"
 
         if not os.path.exists(base_folder):
@@ -179,7 +201,6 @@ class PianoApp:
             if not os.path.exists(sample_path):
                 try:
                     url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
-                    # Add a User-Agent to avoid GitHub blocking requests sometimes
                     headers = {'User-Agent': 'Mozilla/5.0'} 
                     r = requests.get(url, headers=headers, timeout=5)
                     
@@ -187,7 +208,7 @@ class PianoApp:
                         with open(sample_path, 'wb') as f:
                             f.write(r.content)
                     else:
-                        messagebox.showerror("Download Error", f"Failed to download {url}\n\n\nStatus : {r.status_code}")
+                        messagebox.showerror("Download Error", f"Failed to download {url}\n\nStatus : {r.status_code}")
                         break
                     
                 except Exception as e:
@@ -203,12 +224,6 @@ class PianoApp:
                     print(f"Pygame could not load {sample_path}: {e}")
 
     def create_keys(self):
-        # ... (Keep your existing create_keys code here) ...
-        # If you want the mapping from the PREVIOUS picture (QWERTY layout), 
-        # use the create_keys I provided in the previous answer.
-        # If you want the one in the file you just uploaded, paste that logic here.
-        # For safety, I will use the logic from the file you uploaded in THIS prompt:
-        
         w_width = 50 
         w_height = 200
         b_width = 30   
