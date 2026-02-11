@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 import pygame
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import io
 from PIL import Image, ImageTk
@@ -140,10 +142,10 @@ class PianoApp:
                                       variable=self.instrument_var, value="Meowsynth", 
                                       command=self.change_instrument, **rb_style)
 
-        self.rb_piano.pack(side=tk.LEFT, padx=10)
-        self.rb_guitar.pack(side=tk.LEFT, padx=10)
-        self.rb_poon.pack(side=tk.LEFT, padx=10)
-        self.rb_meowsynth.pack(side=tk.LEFT, padx=10)
+        self.rb_piano.pack(side=tk.LEFT, padx=15)
+        self.rb_guitar.pack(side=tk.LEFT, padx=15)
+        self.rb_poon.pack(side=tk.LEFT, padx=15)
+        self.rb_meowsynth.pack(side=tk.LEFT, padx=15)
 
         # Status Label to show loading state
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
@@ -205,21 +207,28 @@ class PianoApp:
             sample_path = f"{base_folder}/{file_name}.mp3"
             
             # Download if doesn't exist
-            if not os.path.exists(sample_path):
-                try:
+            def Download_audio():
+                if not os.path.exists(sample_path):
                     url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
-                    headers = {'User-Agent': 'Mozilla/5.0'} 
-                    r = requests.get(url, headers=headers, timeout=5)
-                    
-                    if r.status_code == 200:
-                        with open(sample_path, 'wb') as f:
-                            f.write(r.content)
-                    else:
-                        messagebox.showerror("Download Error", f"Failed to download {url}\n\nStatus : {r.status_code}")
-                        break
-                    
-                except Exception as e:
-                    print(f"Error loading {note_name}: {e}")
+                    try:
+                        response = requests.get(url, timeout=10)
+                        if response.status_code == 200:
+                            with open(sample_path, 'wb') as f:
+                                f.write(response.content)
+                        else:
+                            print(f"Failed to download {url}: Status {response.status_code}")
+                    except Exception as e:
+                        print(f"Error downloading {url}: {e}")
+            errors = []
+            with ThreadPoolExecutor(max_workers=100) as executor:
+                futures = [executor.submit(Download_audio) for name in sample_path]
+
+                for future in as_completed(futures):
+                    result = future.result()
+                if result:
+                    errors.append(result)
+            if errors:
+                messagebox.showerror("Download Error","Some files failed:\n\n" + "\n".join(errors))
             
             # Load into Pygame mixer
             if os.path.exists(sample_path):
