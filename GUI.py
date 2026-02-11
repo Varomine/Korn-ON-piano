@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
+link4 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Meowsynth/"
 ICON_URL = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
 
 SAMPLE_BASE_URL = link1
@@ -135,10 +136,14 @@ class PianoApp:
         self.rb_poon = tk.Radiobutton(self.control_frame, text="Poon", 
                                       variable=self.instrument_var, value="Poon", 
                                       command=self.change_instrument, **rb_style)
+        self.rb_meowsynth = tk.Radiobutton(self.control_frame, text="Meowsynth", 
+                                      variable=self.instrument_var, value="Meowsynth", 
+                                      command=self.change_instrument, **rb_style)
 
-        self.rb_piano.pack(side=tk.LEFT, padx=15)
-        self.rb_guitar.pack(side=tk.LEFT, padx=15)
-        self.rb_poon.pack(side=tk.LEFT, padx=15)
+        self.rb_piano.pack(side=tk.LEFT, padx=10)
+        self.rb_guitar.pack(side=tk.LEFT, padx=10)
+        self.rb_poon.pack(side=tk.LEFT, padx=10)
+        self.rb_meowsynth.pack(side=tk.LEFT, padx=10)
 
         # Status Label to show loading state
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
@@ -175,6 +180,8 @@ class PianoApp:
             SAMPLE_BASE_URL = link2
         elif selection == "Poon":
             SAMPLE_BASE_URL = link3
+        elif selection == "Meowsynth":
+            SAMPLE_BASE_URL = link4
             
         # Update status
         self.status_label.config(text=f"Loading {selection} sounds... please wait.")
