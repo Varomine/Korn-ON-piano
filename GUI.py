@@ -1,18 +1,30 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import pygame
 import os
 import requests
 import io
+import threading
+import concurrent.futures
 from PIL import Image, ImageTk
 
 # Configuration Links
+
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
 link4 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Meowsynth/"
 link5 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Organ/"
 link6 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Plastic/"
+
+links = {
+    "Piano": link1,
+    "Guitar": link2,
+    "Poon": link3,
+    "Meowsynth": link4,
+    "Organ": link5,
+    "Plastic": link6
+}
 ICON_URL = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?raw=true"
 
 SAMPLE_BASE_URL = link1
@@ -27,6 +39,76 @@ NOTES_MAPPING = {
     'E3': 'E3',   'F3': 'F3',    'F#3': 'Gb3', 'G3': 'G3',
     'G#3': 'Ab3', 'A3': 'A3',    'A#3': 'Bb3', 'B3': 'B3',
 }
+
+class PreLoader:
+    def __init__(self, root, on_finished):
+        self.root = root
+        self.on_finished = on_finished
+        self.root.title("Checking files...")
+        self.root.geometry("400x180")
+        self.root.configure(bg='#1a1a1a')
+        self.root.eval('tk::PlaceWindow . center')
+
+        tk.Label(self.root, text="Checking audio...", 
+                 fg='#00ADB5', bg='#1a1a1a', font=("Tahoma", 10, "bold")).pack(pady=20)
+
+        self.progress = ttk.Progressbar(self.root, orient=tk.HORIZONTAL, length=300, mode='determinate')
+        self.progress.pack(pady=10)
+
+        self.label_status = tk.Label(self.root, text="Launching...", fg='white', bg='#1a1a1a', font=("Tahoma", 8))
+        self.label_status.pack()
+
+        threading.Thread(target=self.start_download, daemon=True).start()
+
+    def download_task(self, info):
+        folder, note, url_base = info
+        path = f"samples/{folder}/{note}.mp3"
+        
+        # --- จุดที่แก้ไข: ถ้ามีไฟล์อยู่แล้ว ให้ข้ามการดาวน์โหลดทันที ---
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            return True 
+        
+        try:
+            r = requests.get(f"{url_base}{note}.mp3", timeout=10)
+            if r.status_code == 200:
+                with open(path, 'wb') as f:
+                    f.write(r.content)
+            return True
+        except:
+            return False
+
+    def start_download(self):
+        instruments = links
+        all_tasks = []
+        
+        for name, url in instruments.items():
+            if not os.path.exists(f"samples/{name}"):
+                os.makedirs(f"samples/{name}")
+            for note_file in NOTES_MAPPING.values():
+                all_tasks.append((name, note_file, url))
+
+        total = len(all_tasks)
+        
+        # ใช้ ThreadPool ให้ทำงานพร้อมกัน
+        with concurrent.futures.ThreadPoolExecutor(max_workers=216) as executor:
+            futures = [executor.submit(self.download_task, task) for task in all_tasks]
+            done_count = 0
+            for _ in concurrent.futures.as_completed(futures):
+                done_count += 1
+                percent = int((done_count / total) * 100)
+                # อัปเดต UI ให้เห็นว่ากำลังเช็คหรือโหลด
+                self.root.after(0, self.update_ui, percent, done_count, total)
+
+        self.root.after(200, self.finish)
+
+    def update_ui(self, percent, count, total):
+        self.progress['value'] = percent
+        self.label_status.config(text=f"Downloading {count}/{total} files ({percent}%)")
+
+    def finish(self):
+        self.root.destroy()
+        self.on_finished()
+
 
 class SplashScreen:
     def __init__(self, root, on_finished):
@@ -109,6 +191,11 @@ class PianoApp:
         # ตั้งค่าไอคอนแอป
         self.set_app_icon()
 
+        # [ส่วนที่เพิ่ม] : ตั้งค่าเสียงเริ่มต้น และ สร้างเมนู
+        self.master_volume = 1.0  # 1.0 คือ 100%
+        self.create_menu()
+        # ----------------------------------------
+
         # 1. Title
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=(20, 10))
@@ -167,6 +254,41 @@ class PianoApp:
         self.piano_container.pack(pady=20, fill=tk.X, expand=True)
 
         self.create_keys()
+
+    # [ส่วนที่เพิ่ม] : ฟังก์ชันสร้างเมนู
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Volume Settings", command=self.open_settings)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=file_menu)
+        self.root.config(menu=menubar)
+
+    # [ส่วนที่เพิ่ม] : ฟังก์ชันเปิดหน้าต่างปรับเสียง
+    def open_settings(self):
+        win = tk.Toplevel(self.root)
+        win.title("Volume Settings")
+        win.geometry("300x120")
+        win.configure(bg='#121212')
+
+        tk.Label(win, text="Master Volume", fg='white', bg='#121212', font=("Arial", 12)).pack(pady=10)
+        
+        # Slider 0 - 100
+        slider = tk.Scale(win, from_=0, to=100, orient=tk.HORIZONTAL,
+                          bg='#121212', fg='white', length=200,
+                          command=self.change_volume)
+        slider.set(self.master_volume * 100) # ตั้งค่าตามเสียงปัจจุบัน
+        slider.pack()
+
+    # [ส่วนที่เพิ่ม] : ฟังก์ชันเปลี่ยนระดับเสียง
+    def change_volume(self, val):
+        volume = int(val) / 100
+        self.master_volume = volume
+        # ไล่เปลี่ยนเสียงทุกตัวที่โหลดอยู่
+        for sound in self.sounds.values():
+            sound.set_volume(self.master_volume)
+    # ----------------------------------------
 
     def set_app_icon(self):
         """ฟังก์ชันสำหรับโหลดและตั้งค่าไอคอน"""
@@ -239,7 +361,8 @@ class PianoApp:
             if os.path.exists(sample_path):
                 try:
                     s = pygame.mixer.Sound(sample_path)
-                    s.set_volume(1.0)
+                    # [แก้ตรงนี้] ใช้ตัวแปร self.master_volume แทน 1.0
+                    s.set_volume(self.master_volume) 
                     self.sounds[note_name] = s
                 except pygame.error as e:
                     print(f"Pygame could not load {sample_path}: {e}")
@@ -320,10 +443,15 @@ class PianoApp:
 
 def launch_app():
     main_root = tk.Tk()
-    app = PianoApp(main_root)
+    PianoApp(main_root)
     main_root.mainloop()
+
+def launch_splash():
+    splash_root = tk.Tk()
+    SplashScreen(splash_root, launch_app)
+    splash_root.mainloop()
 
 if __name__ == "__main__":
     splash_root = tk.Tk()
-    splash = SplashScreen(splash_root, launch_app)
+    splash = PreLoader(splash_root, launch_splash)
     splash_root.mainloop()
