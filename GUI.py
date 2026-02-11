@@ -219,6 +219,7 @@ class PianoApp:
         self.rb_meowsynth = tk.Radiobutton(self.control_frame, text="Meowsynth", variable=self.instrument_var, value="Meowsynth", command=self.change_instrument, **rb_style)
         self.rb_plastic = tk.Radiobutton(self.control_frame, text="Plastic", variable=self.instrument_var, value="Plastic", command=self.change_instrument, **rb_style)
         self.rb_organ = tk.Radiobutton(self.control_frame, text="Organ", variable=self.instrument_var, value="Organ", command=self.change_instrument, **rb_style)
+        self.bt_sheet = tk.Button(self.control_frame, text="Sheet Music", command=self.sheet, bg='#00ADB5', fg='black', font=("Arial", 12, "bold"))
 
         self.rb_piano.pack(side=tk.LEFT, padx=10)
         self.rb_guitar.pack(side=tk.LEFT, padx=10)
@@ -226,6 +227,7 @@ class PianoApp:
         self.rb_meowsynth.pack(side=tk.LEFT, padx=10)
         self.rb_plastic.pack(side=tk.LEFT, padx=10)
         self.rb_organ.pack(side=tk.LEFT, padx=10)
+        self.bt_sheet.pack(side=tk.LEFT, padx=20)
 
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
         self.status_label.pack()
@@ -262,6 +264,25 @@ class PianoApp:
                           command=self.change_volume)
         slider.set(self.master_volume * 100)
         slider.pack()
+
+    def sheet(self):
+        win = tk.Toplevel(self.root)
+        win.title("Sheet Music")
+        win.geometry("1000x400")
+        sheet = {
+            "rv": '[YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] B C B ] B R B [I.] B X B , B [QN] M [E,] [PB.] M [UVN] O X B V [YB] P C X B N [RM] I X M , [Q.] T P , M [TN] O V [YB] M B [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XB] N N B ] [Y.B] P C B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O [XB] N B ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [TB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] B N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [RN] [UB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X B M [YB] [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [PV.] [QM] [TVN] O X B V [YXB] P X B N [RM] X [XB] N M X [XM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [O,] M [XN] V [YM] B [P]] B C B [Y]] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XN] M N [TB] ] [Y.B] P C B N [RM] X [IB] N [XM] X [RM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [OV] N [UB] N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [R.] N [UB] B N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [W.] N [UB] B N [TB] ] [YB] B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X [YPB] M B ] B ] [YBB] [Z.] [CB] [Y,] [TM] [P,] [B.] M [XVN] B V [YP] X B E X B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O V B M [YB] [P]] [CB] ] [RB] . B [I.] [XB] [R,] [QN] M [T,] [P.] M [T.N] O V B V [YXB] E C B N [RM] [IX] [ZB] M , [Q.] [TX] [PB] , M [TN] W [UX] [YB] [EI] [YP] C B',
+            "bd": 'I I O I Z P I I O I X Z I I B C Z P O V V C Z X Z'
+        }
+        win.configure(bg='#121212')
+        def music(song):
+            self.text_area['text'] = song
+        self.bt_river_flow_in_you = tk.Button(win, text="River Flows in You - Yiruma", bg='#00ADB5', fg='black', font=("Arial", 12, "bold"),command=lambda: music(sheet["rv"]))
+        self.bt_river_flow_in_you.place(x=25,y=25)
+        self.Happy_Birthday_to_You = tk.Button(win, text="Happy Birthday to You", bg='#00ADB5', fg='black', font=("Arial", 12, "bold"),command=lambda: music(sheet["bd"]))
+        self.Happy_Birthday_to_You.place(x=250,y=25)
+        self.text_area = tk.Label(win, text="(Sheet music content goes here)", bg='#121212', fg='white', font=("Arial", 12),wraplength=950, justify=tk.LEFT,pady=30)
+        self.text_area.place(x=25,y=70)
+        
 
     def change_volume(self, val):
         volume = int(val) / 100
@@ -336,6 +357,7 @@ class PianoApp:
                     s = pygame.mixer.Sound(sample_path)
                     s.set_volume(self.master_volume) 
                     self.sounds[note_name] = s
+
                 except pygame.error as e:
                     print(f"Pygame could not load {sample_path}: {e}")
 
