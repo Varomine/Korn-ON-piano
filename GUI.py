@@ -8,8 +8,6 @@ import threading
 import concurrent.futures
 from PIL import Image, ImageTk
 
-# Configuration Links
-
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
@@ -119,13 +117,13 @@ class SplashScreen:
         self.root.configure(bg='#1a1a1a')
         self.root.eval('tk::PlaceWindow . center')
         
-        self.img_url = ICON_URL # ใช้ลิงก์เดียวกัน
+        self.img_url = ICON_URL
         self.display_logo()
 
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), 
                  fg='#00ADB5', bg='#1a1a1a').pack(pady=10)
 
-        self.label_status = tk.Label(self.root, text="กำลังเตรียมเสียงเปียโนระดับพรีเมียม...", 
+        self.label_status = tk.Label(self.root, text="Preparing application...", 
                                      font=("Tahoma", 11), fg='white', bg='#1a1a1a')
         self.label_status.pack(pady=5)
 
@@ -215,25 +213,12 @@ class PianoApp:
             'font': ("Arial", 12)
         }
 
-        self.rb_piano = tk.Radiobutton(self.control_frame, text="Piano (Default)", 
-                                     variable=self.instrument_var, value="Piano", 
-                                     command=self.change_instrument, **rb_style)
-        
-        self.rb_guitar = tk.Radiobutton(self.control_frame, text="Guitar", 
-                                      variable=self.instrument_var, value="Guitar", 
-                                      command=self.change_instrument, **rb_style)
-        self.rb_poon = tk.Radiobutton(self.control_frame, text="Poon", 
-                                      variable=self.instrument_var, value="Poon", 
-                                      command=self.change_instrument, **rb_style)
-        self.rb_meowsynth = tk.Radiobutton(self.control_frame, text="Meowsynth", 
-                                      variable=self.instrument_var, value="Meowsynth", 
-                                      command=self.change_instrument, **rb_style)
-        self.rb_plastic = tk.Radiobutton(self.control_frame, text="Plastic", 
-                                      variable=self.instrument_var, value="Plastic", 
-                                      command=self.change_instrument, **rb_style)
-        self.rb_organ = tk.Radiobutton(self.control_frame, text="Organ", 
-                                      variable=self.instrument_var, value="Organ", 
-                                      command=self.change_instrument, **rb_style)
+        self.rb_piano = tk.Radiobutton(self.control_frame, text="Piano (Default)", variable=self.instrument_var, value="Piano", command=self.change_instrument, **rb_style)
+        self.rb_guitar = tk.Radiobutton(self.control_frame, text="Guitar", variable=self.instrument_var, value="Guitar", command=self.change_instrument, **rb_style)
+        self.rb_poon = tk.Radiobutton(self.control_frame, text="Poon", variable=self.instrument_var, value="Poon", command=self.change_instrument, **rb_style)
+        self.rb_meowsynth = tk.Radiobutton(self.control_frame, text="Meowsynth", variable=self.instrument_var, value="Meowsynth", command=self.change_instrument, **rb_style)
+        self.rb_plastic = tk.Radiobutton(self.control_frame, text="Plastic", variable=self.instrument_var, value="Plastic", command=self.change_instrument, **rb_style)
+        self.rb_organ = tk.Radiobutton(self.control_frame, text="Organ", variable=self.instrument_var, value="Organ", command=self.change_instrument, **rb_style)
 
         self.rb_piano.pack(side=tk.LEFT, padx=10)
         self.rb_guitar.pack(side=tk.LEFT, padx=10)
@@ -242,7 +227,6 @@ class PianoApp:
         self.rb_plastic.pack(side=tk.LEFT, padx=10)
         self.rb_organ.pack(side=tk.LEFT, padx=10)
 
-        # Status Label to show loading state
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
         self.status_label.pack()
 
@@ -255,17 +239,15 @@ class PianoApp:
 
         self.create_keys()
 
-    # [ส่วนที่เพิ่ม] : ฟังก์ชันสร้างเมนู
     def create_menu(self):
         menubar = tk.Menu(self.root)
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Volume Settings", command=self.open_settings)
         file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.root.quit)
+        file_menu.add_command(label="Exit", command=self.root.destroy)
         menubar.add_cascade(label="File", menu=file_menu)
         self.root.config(menu=menubar)
 
-    # [ส่วนที่เพิ่ม] : ฟังก์ชันเปิดหน้าต่างปรับเสียง
     def open_settings(self):
         win = tk.Toplevel(self.root)
         win.title("Volume Settings")
@@ -278,20 +260,17 @@ class PianoApp:
         slider = tk.Scale(win, from_=0, to=100, orient=tk.HORIZONTAL,
                           bg='#121212', fg='white', length=200,
                           command=self.change_volume)
-        slider.set(self.master_volume * 100) # ตั้งค่าตามเสียงปัจจุบัน
+        slider.set(self.master_volume * 100)
         slider.pack()
 
-    # [ส่วนที่เพิ่ม] : ฟังก์ชันเปลี่ยนระดับเสียง
     def change_volume(self, val):
         volume = int(val) / 100
         self.master_volume = volume
         # ไล่เปลี่ยนเสียงทุกตัวที่โหลดอยู่
         for sound in self.sounds.values():
             sound.set_volume(self.master_volume)
-    # ----------------------------------------
 
     def set_app_icon(self):
-        """ฟังก์ชันสำหรับโหลดและตั้งค่าไอคอน"""
         try:
             response = requests.get(ICON_URL, timeout=5)
             if response.status_code == 200:
@@ -302,7 +281,6 @@ class PianoApp:
             print(f"Could not set app icon: {e}")
 
     def change_instrument(self):
-        """Handle Radio Button Change"""
         selection = self.instrument_var.get()
         global SAMPLE_BASE_URL
         
@@ -319,18 +297,15 @@ class PianoApp:
         elif selection == "Plastic":
             SAMPLE_BASE_URL = link6
             
-        # Update status
         self.status_label.config(text=f"Loading {selection} sounds... please wait.")
-        self.root.update() # Force UI update
+        self.root.update()
         
-        # Clear current sounds and reload
         self.sounds.clear()
         self.load_samples()
         
         self.status_label.config(text=f"{selection} Ready!")
 
     def load_samples(self):
-        """Loads samples into specific folders so Piano/Guitar don't overwrite each other"""
         current_instrument = self.instrument_var.get()
         base_folder = f"samples/{current_instrument}"
 
@@ -339,8 +314,7 @@ class PianoApp:
 
         for note_name, file_name in NOTES_MAPPING.items():
             sample_path = f"{base_folder}/{file_name}.mp3"
-            
-            # Download if doesn't exist
+
             if not os.path.exists(sample_path):
                 try:
                     url = f"{SAMPLE_BASE_URL}{file_name}.mp3"
@@ -356,12 +330,10 @@ class PianoApp:
                     
                 except Exception as e:
                     print(f"Error loading {note_name}: {e}")
-            
-            # Load into Pygame mixer
+
             if os.path.exists(sample_path):
                 try:
                     s = pygame.mixer.Sound(sample_path)
-                    # [แก้ตรงนี้] ใช้ตัวแปร self.master_volume แทน 1.0
                     s.set_volume(self.master_volume) 
                     self.sounds[note_name] = s
                 except pygame.error as e:
@@ -451,7 +423,7 @@ def launch_splash():
     SplashScreen(splash_root, launch_app)
     splash_root.mainloop()
 
-if __name__ == "__main__":
-    splash_root = tk.Tk()
-    splash = PreLoader(splash_root, launch_splash)
-    splash_root.mainloop()
+
+splash_root = tk.Tk()
+splash = PreLoader(splash_root, launch_splash)
+splash_root.mainloop()
