@@ -572,7 +572,7 @@ class PianoApp:
         is_piano = selection == "Piano"
         
         if is_expert and is_piano:
-            self.root.geometry("1950x780")
+            self.root.geometry("1900x780")
         else:
             self.root.geometry("1150x780")
             
