@@ -61,8 +61,6 @@ class PreLoader:
     def download_task(self, info):
         folder, note, url_base = info
         path = f"samples/{folder}/{note}.mp3"
-        
-        # --- จุดที่แก้ไข: ถ้ามีไฟล์อยู่แล้ว ให้ข้ามการดาวน์โหลดทันที ---
         if os.path.exists(path) and os.path.getsize(path) > 0:
             return True 
         
@@ -86,15 +84,13 @@ class PreLoader:
                 all_tasks.append((name, note_file, url))
 
         total = len(all_tasks)
-        
-        # ใช้ ThreadPool ให้ทำงานพร้อมกัน
+ 
         with concurrent.futures.ThreadPoolExecutor(max_workers=216) as executor:
             futures = [executor.submit(self.download_task, task) for task in all_tasks]
             done_count = 0
             for _ in concurrent.futures.as_completed(futures):
                 done_count += 1
                 percent = int((done_count / total) * 100)
-                # อัปเดต UI ให้เห็นว่ากำลังเช็คหรือโหลด
                 self.root.after(0, self.update_ui, percent, done_count, total)
 
         self.root.after(200, self.finish)
@@ -127,6 +123,11 @@ class SplashScreen:
                                      font=("Tahoma", 11), fg='white', bg='#1a1a1a')
         self.label_status.pack(pady=5)
 
+        self.skip_btn = tk.Button(self.root, text="Skip Intro ▶", font=("Tahoma", 10, "bold"), 
+                                  bg='#333333', fg='white', activebackground='#00ADB5', 
+                                  activeforeground='black', command=self.finish, bd=0, padx=15, pady=5)
+        self.skip_btn.pack(pady=10)
+
         self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
         self.prepare_app()
 
@@ -134,12 +135,10 @@ class SplashScreen:
         try:
             response = requests.get(self.img_url, timeout=10)
             img_data = Image.open(io.BytesIO(response.content))
-            
-            # เก็บรูปต้นฉบับไว้ทำ Icon
-            self.icon_image = ImageTk.PhotoImage(img_data)
-            self.root.iconphoto(False, self.icon_image) # <-- ตั้งค่าไอคอนตรงนี้
 
-            # ย่อรูปเพื่อแสดงโลโก้ตรงกลาง
+            self.icon_image = ImageTk.PhotoImage(img_data)
+            self.root.iconphoto(False, self.icon_image)
+
             img_resized = img_data.resize((280, 280), Image.Resampling.LANCZOS)
             self.logo_img = ImageTk.PhotoImage(img_resized)
             tk.Label(self.root, image=self.logo_img, bg='#1a1a1a', bd=0).pack(pady=(30, 10))
@@ -159,8 +158,6 @@ class SplashScreen:
                 pygame.mixer.music.set_volume(0.8)
                 pygame.mixer.music.play()
                 
-            if not os.path.exists('samples'):
-                os.makedirs('samples')
             
             self.check_music_status()
         except:
@@ -173,11 +170,10 @@ class SplashScreen:
             self.finish()
 
     def finish(self):
-        try:
+        if pygame.mixer.get_init():
+            pygame.mixer.music.stop()
             self.root.destroy()
             self.on_finished()
-        except:
-            pass
 
 class PianoApp:
     def __init__(self, root):
@@ -185,26 +181,21 @@ class PianoApp:
         self.root.title("Korn-ON! Piano")
         self.root.geometry("1250x600")
         self.root.configure(bg='#121212')
-        
-        # ตั้งค่าไอคอนแอป
+
         self.set_app_icon()
 
-        # [ส่วนที่เพิ่ม] : ตั้งค่าเสียงเริ่มต้น และ สร้างเมนู
-        self.master_volume = 1.0  # 1.0 คือ 100%
+        self.master_volume = 1.0
         self.create_menu()
         # ----------------------------------------
 
-        # 1. Title
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=(20, 10))
 
-        # 2. Control Frame (Radio Buttons)
         self.control_frame = tk.Frame(self.root, bg='#121212')
         self.control_frame.pack(pady=5)
 
         self.instrument_var = tk.StringVar(value="Piano")
-        
-        # Style for radio buttons
+
         rb_style = {
             'bg': '#121212', 'fg': 'white', 
             'selectcolor': '#333333', 
@@ -233,7 +224,6 @@ class PianoApp:
         self.status_label.pack()
 
         self.sounds = {}
-        # Initial load
         self.load_samples()
         
         self.piano_container = tk.Frame(self.root, bg='#121212', height=300)
@@ -258,7 +248,6 @@ class PianoApp:
 
         tk.Label(win, text="Master Volume", fg='white', bg='#121212', font=("Arial", 12)).pack(pady=10)
         
-        # Slider 0 - 100
         slider = tk.Scale(win, from_=0, to=100, orient=tk.HORIZONTAL,
                           bg='#121212', fg='white', length=200,
                           command=self.change_volume)
@@ -287,7 +276,7 @@ class PianoApp:
     def change_volume(self, val):
         volume = int(val) / 100
         self.master_volume = volume
-        # ไล่เปลี่ยนเสียงทุกตัวที่โหลดอยู่
+
         for sound in self.sounds.values():
             sound.set_volume(self.master_volume)
 
