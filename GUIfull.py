@@ -10,7 +10,7 @@ import time
 import re
 from PIL import Image, ImageTk
 
-# --- Configuration & Constants ---
+# Application configurations and URLs
 link1 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/piano/"
 link2 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Guitar/"
 link3 = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/Poon/"
@@ -30,6 +30,7 @@ ICON_URL = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?
 
 SAMPLE_BASE_URL = link1
 
+# Standard note to file mappings
 NOTES_MAPPING = {
     'C2': 'C2', 'C#2': 'Db2', 'D2': 'D2', 'D#2': 'Eb2', 'E2': 'E2', 'F2': 'F2', 'F#2': 'Gb2', 'G2': 'G2', 'G#2': 'Ab2', 'A2': 'A2', 'A#2': 'Bb2', 'B2': 'B2',
     'C3': 'C3', 'C#3': 'Db3', 'D3': 'D3', 'D#3': 'Eb3', 'E3': 'E3', 'F3': 'F3', 'F#3': 'Gb3', 'G3': 'G3', 'G#3': 'Ab3', 'A3': 'A3', 'A#3': 'Bb3', 'B3': 'B3',
@@ -39,6 +40,7 @@ NOTES_MAPPING = {
     'C7': 'C7'
 }
 
+# Preloader window for verifying and downloading audio assets
 class PreLoader:
     def __init__(self, root, on_finished):
         self.root = root
@@ -101,6 +103,7 @@ class PreLoader:
         self.on_finished()
 
 
+# Splash screen displaying logo and startup audio
 class SplashScreen:
     def __init__(self, root, on_finished):
         self.root = root
@@ -176,6 +179,7 @@ class SplashScreen:
             pass
 
 
+# Main piano application class handling UI and logic
 class PianoApp:
     def __init__(self, root):
         self.root = root
@@ -188,7 +192,6 @@ class PianoApp:
         self.sounds = {}
         self.instrument_radios = {}
         
-        # Determine Layout Mode
         self.layout_var = tk.StringVar(value="Basic")
 
         self.sound_cache = {inst: {} for inst in links.keys()}
@@ -198,7 +201,7 @@ class PianoApp:
         self.macro_paused = False
         self.autoplay_enabled = tk.BooleanVar(value=False)
         
-        # --- MAPPINGS ---
+        # Expert layout keybind mappings
         self.expert_key_to_note = {
             '1':'C2', '2':'D2', '3':'E2', '4':'F2', '5':'G2', '6':'A2', '7':'B2',
             '!':'C#2', '@':'D#2', '$':'F#2', '%':'G#2', '^':'A#2',
@@ -213,16 +216,16 @@ class PianoApp:
             'm':'C7'
         }
 
+        # Basic layout keybind mappings
         self.basic_key_to_note = {}
         
-        # FIX 2: Added missing '/' and '?' mappings for A5, and '}' for B5 to ensure robustness
         basic_mapping = [
             ('q','C3'), ('2','C#3'), ('w','D3'), ('3','D#3'), ('e','E3'), ('r','F3'), ('5','F#3'), ('t','G3'), ('6','G#3'), ('y','A3'), ('7','A#3'), ('u','B3'),
             ('i','C4'), ('9','C#4'), ('o','D4'), ('0','D#4'), ('p','E4'), ('z','F4'), ('s','F#4'), ('x','G4'), ('d','G#4'), ('c','A4'), ('f','A#4'), ('v','B4'),
             ('b','C5'), ('h','C#5'), ('n','D5'), ('j','D#5'), ('m','E5'), (',','F5'), ('l','F#5'), ('.','G5'), (';','G#5'), (':','G#5'), ('/','A5'), ('?','A5'), ("'",'A#5'), ('"','A#5'), (']','B5'), ('}','B5')
         ]
         
-        # Allow case-insensitive typing for robust Basic playing
+        # Apply case-insensitivity to basic keys
         for k, v in basic_mapping:
             self.basic_key_to_note[k] = v
             if k.isalpha():
@@ -230,6 +233,7 @@ class PianoApp:
                 
         self.key_to_note = self.basic_key_to_note 
         
+        # Expert layout macro sequences
         self.macros = {
             "Grand Escape (Weathering With You)": {
                 "time": 155,
@@ -243,15 +247,25 @@ class PianoApp:
             }
         }
 
+        # Basic layout macro sequences
+        self.basic_macros = {
+            "Happy Birthday to You": {
+                "macro": 'I I O I Z P I I O I X Z I I B C Z P O V V C Z X Z'
+            },
+            "River Flows in You": {
+                "macro": '[YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] B C B ] B R B [I.] B X B , B [QN] M [E,] [PB.] M [UVN] O X B V [YB] P C X B N [RM] I X M , [Q.] T P , M [TN] O V [YB] M B [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XB] N N B ] [Y.B] P C B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O [XB] N B ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [TB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] B N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [RN] [UB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X B M [YB] [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [PV.] [QM] [TVN] O X B V [YXB] P X B N [RM] X [XB] N M X [XM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [O,] M [XN] V [YM] B [P]] B C B [Y]] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XN] M N [TB] ] [Y.B] P C B N [RM] X [IB] N [XM] X [RM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [OV] N [UB] N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [R.] N [UB] B N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [W.] N [UB] B N [TB] ] [YB] B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X [YPB] M B ] B ] [YBB] [Z.] [CB] [Y,] [TM] [P,] [B.] M [XVN] B V [YP] X B E X B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O V B M [YB] [P]] [CB] ] [RB] . B [I.] [XB] [R,] [QN] M [T,] [P.] M [T.N] O V B V [YXB] E C B N [RM] [IX] [ZB] M , [Q.] [TX] [PB] , M [TN] W [UX] [YB] [EI] [YP] C B'
+            }
+        }
+
         self.create_menu()
         self.build_ui()
         
         self.preload_all_sounds()
         self.root.bind("<KeyPress>", self.on_key_press)
         
-        # Initialize the layout and the instrument correctly
         self.change_layout()
 
+    # Preload all audio resources
     def preload_all_sounds(self):
         self.status_label.config(text="Preloading all instruments into memory...")
         self.root.update()
@@ -270,12 +284,11 @@ class PianoApp:
                         
         self.status_label.config(text="Preload complete!")
 
+    # Construct main user interface elements
     def build_ui(self):
-        # Header
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=(15, 5))
 
-        # Instrument controls
         self.control_frame = tk.Frame(self.root, bg='#121212')
         self.control_frame.pack(pady=5)
         self.instrument_var = tk.StringVar(value="Piano")
@@ -287,24 +300,24 @@ class PianoApp:
                                 value=inst, command=self.change_instrument, **rb_style)
             rb.pack(side=tk.LEFT, padx=10)
             self.instrument_radios[inst] = rb
+
+        self.bt_sheet = tk.Button(self.control_frame, text="Sheet Music", command=self.sheet, bg='#00ADB5', fg='black', font=("Arial", 12, "bold"))
+        self.bt_sheet.pack(side=tk.LEFT, padx=20)
             
         self.status_label = tk.Label(self.root, text="", bg='#121212', fg='#888', font=("Arial", 10))
         self.status_label.pack()
 
-        # Macro Text Display
         self.macro_display = tk.Text(self.root, height=6, width=70, bg='#1c1c1c', fg='white', font=("Courier", 12), wrap=tk.WORD)
         self.macro_display.tag_configure("center", justify='center')
         self.macro_display.tag_config("highlight", background="#00ADB5", foreground="black")
         self.macro_display.insert(tk.END, "Select a macro and press play...", "center")
         self.macro_display.config(state=tk.DISABLED)
 
-        # Piano wrapper
         self.piano_wrapper = tk.Frame(self.root, bg='#121212')
         self.piano_wrapper.pack(pady=10, fill=tk.BOTH, expand=True)
         self.piano_container = tk.Frame(self.piano_wrapper, bg='#121212')
         self.piano_container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-        # Progress Frame
         self.progress_frame = tk.Frame(self.root, bg='#121212')
         
         self.time_label = tk.Label(self.progress_frame, text="00:00 / 00:00", fg='white', bg='#121212', font=("Arial", 10))
@@ -313,7 +326,6 @@ class PianoApp:
         self.progress_bar = ttk.Progressbar(self.progress_frame, orient=tk.HORIZONTAL, mode='determinate')
         self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # Macro Control Bar
         self.macro_frame = tk.Frame(self.root, bg='#1c1c1c', pady=10)
         tk.Label(self.macro_frame, text="AUTOPLAY:", fg='#00ADB5', bg='#1c1c1c', font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=(20, 10))
         self.song_selector = ttk.Combobox(self.macro_frame, values=list(self.macros.keys()), state="readonly", width=35)
@@ -337,25 +349,95 @@ class PianoApp:
         self.tempo_label = tk.Label(self.macro_frame, text="Tempo: 146 BPM", fg='#888', bg='#1c1c1c', font=("Arial", 10))
         self.tempo_label.pack(side=tk.RIGHT, padx=20)
 
+    # Initialize sheet music modal window
+    def sheet(self):
+        win = tk.Toplevel(self.root)
+        win.title("Sheet Music")
+        win.geometry("1000x500")
+        win.configure(bg='#121212')
+        
+        sidebar = tk.Frame(win, bg='#1c1c1c', width=250)
+        sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        sidebar.pack_propagate(False) 
+        
+        tk.Label(sidebar, text="Song List", bg='#1c1c1c', fg='#00ADB5', 
+                 font=("Arial", 16, "bold")).pack(pady=(20, 10))
+
+        content_frame = tk.Frame(win, bg='#121212')
+        content_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        tk.Label(content_frame, text="Sheet Music", bg='#121212', 
+                 fg='#888888', font=("Arial", 12, "bold")).pack(anchor=tk.W, pady=(0, 10))
+
+        self.text_area = tk.Text(content_frame, bg='#1a1a1a', fg='white', font=("Courier", 12), 
+                                 wrap=tk.WORD, bd=0, padx=15, pady=15)
+        self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        scrollbar = ttk.Scrollbar(content_frame, command=self.text_area.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text_area.config(yscrollcommand=scrollbar.set)
+        
+        self.text_area.insert(tk.END, "Select a song from the sidebar to view its sheet music...")
+        self.text_area.config(state=tk.DISABLED)
+
+        # Static layout basic song mappings
+        basic_songs = {
+            "Happy Birthday to You": 'I I O I Z P I I O I X Z I I B C Z P O V V C Z X Z',
+            "River Flows in You": '[YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] [CB] ] [RB] [I.] [XB] , B M [YB] [P]] B C B ] B R B [I.] B X B , B [QN] M [E,] [PB.] M [UVN] O X B V [YB] P C X B N [RM] I X M , [Q.] T P , M [TN] O V [YB] M B [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XB] N N B ] [Y.B] P C B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O [XB] N B ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [TB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [ON] [XB] B N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [RN] [UB] N [TB] ] [YB] B [P.] B [CB] N [YB] ] [RB] B [I.] B [XB] N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X B M [YB] [P]] B C B ] B R B [I.] B X B [R,] B [QN] M [T,] [PV.] [QM] [TVN] O X B V [YXB] P X B N [RM] X [XB] N M X [XM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [O,] M [XN] V [YM] B [P]] B C B [Y]] B R B [I.] B X B [R,] B [QN] M [T,] [P.] [QM] [TN] [O.] [XN] M N [TB] ] [Y.B] P C B N [RM] X [IB] N [XM] X [RM] , [Q.] X [TM] , [P.] X [Q,] M [TN] X [OV] N [UB] N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [R.] N [UB] B N [TB] ] [Y]] B B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] N [W.] N [UB] B N [TB] ] [YB] B [P.] B [YB] B N [YB] ] [RB] B [I.] B [XB] B N [RB] ] [QB] N [TM] , [P.] M [QN] B [T]] [WN] [UV] X [YPB] M B ] B ] [YBB] [Z.] [CB] [Y,] [TM] [P,] [B.] M [XVN] B V [YP] X B E X B N [RM] [IX] [XB] M , [Q.] [TX] [PM] , M [TN] O V B M [YB] [P]] [CB] ] [RB] . B [I.] [XB] [R,] [QN] M [T,] [P.] M [T.N] O V B V [YXB] E C B N [RM] [IX] [ZB] M , [Q.] [TX] [PB] , M [TN] W [UX] [YB] [EI] [YP] C B',
+        }
+
+        # Update modal text field content based on selection
+        def load_music(song_name, is_expert):
+            self.text_area.config(state=tk.NORMAL)
+            self.text_area.delete("1.0", tk.END)
+            
+            if is_expert:
+                macro_data = self.macros.get(song_name, {}).get("macro", "No sheet data available.")
+            else:
+                macro_data = basic_songs.get(song_name, "No sheet data available.")
+            
+            self.text_area.insert(tk.END, macro_data)
+            self.text_area.config(state=tk.DISABLED)
+
+        # Check current application layout setting
+        current_layout = self.layout_var.get()
+
+        if current_layout == "Expert":
+            for song in self.macros.keys():
+                btn = tk.Button(sidebar, text=song, bg='#333333', fg='white', 
+                                font=("Arial", 10, "bold"), activebackground='#00ADB5', 
+                                activeforeground='black', bd=0, pady=10, cursor="hand2",
+                                command=lambda s=song: load_music(s, True))
+                btn.pack(fill=tk.X, padx=10, pady=5)
+        else:
+            for song in basic_songs.keys():
+                btn = tk.Button(sidebar, text=song, bg='#333333', fg='white', 
+                                font=("Arial", 10, "bold"), activebackground='#00ADB5', 
+                                activeforeground='black', bd=0, pady=10, cursor="hand2",
+                                command=lambda s=song: load_music(s, False))
+                btn.pack(fill=tk.X, padx=10, pady=5)
+
+    # Manage UI adjustments when switching base layouts
     def change_layout(self):
-        # Update layout properties
         if self.layout_var.get() == "Basic":
             self.key_to_note = self.basic_key_to_note
-            self.file_menu.entryconfig("Autoplay", state=tk.DISABLED)
-            if self.autoplay_enabled.get():
-                self.autoplay_enabled.set(False)
-                self.update_autoplay_visibility()
         else:
             self.key_to_note = self.expert_key_to_note
-            self.file_menu.entryconfig("Autoplay", state=tk.NORMAL)
             
+        if self.autoplay_enabled.get():
+            self.update_autoplay_visibility()
+            self.stop_macro() 
+
         self.change_instrument()
 
+    # Handle song combobox selection changes
     def on_song_select(self, event=None):
-        song = self.macros.get(self.song_selector.get())
-        if song:
-            self.tempo_label.config(text=f"Tempo: {song.get('tempo', 100)} BPM")
+        if self.layout_var.get() == "Expert":
+            song = self.macros.get(self.song_selector.get())
+            if song:
+                self.tempo_label.config(text=f"Tempo: {song.get('tempo', 100)} BPM")
 
+    # Generate layout-specific piano key buttons
     def create_keys(self):
         for widget in self.piano_container.winfo_children():
             widget.destroy()
@@ -364,7 +446,6 @@ class PianoApp:
         w_width, w_height = 50, 200
         b_width, b_height = 30, 120
         
-        # FIX 1: Check both layout AND instrument correctly to restrict octaves
         is_expert = self.layout_var.get() == "Expert"
         is_piano = self.instrument_var.get() == "Piano"
         
@@ -433,6 +514,7 @@ class PianoApp:
 
             total_offset_x += (keys_in_octave * (w_width + 2))
 
+    # Input handling for physical keystrokes
     def on_key_press(self, event):
         char = event.char
         if char in self.key_to_note:
@@ -440,6 +522,7 @@ class PianoApp:
             self.play_note(note)
             self.visual_press(note)
 
+    # Highlight animation handling
     def visual_press(self, note):
         if note in self.key_buttons:
             btn = self.key_buttons[note]
@@ -448,6 +531,7 @@ class PianoApp:
             self.root.after(0, lambda: btn.config(bg=highlight))
             self.root.after(150, lambda: btn.config(bg=orig_bg))
 
+    # Expert layout progress and text updates
     def update_progress_ui(self, percent, time_str, token_start, token_end):
         self.progress_bar['value'] = percent
         self.time_label.config(text=time_str)
@@ -456,19 +540,32 @@ class PianoApp:
         self.macro_display.tag_add("highlight", f"1.0+{token_start}c", f"1.0+{token_end}c")
         self.macro_display.see(f"1.0+{token_start}c")
 
-    def run_macro_logic(self):
-        song_name = self.song_selector.get()
-        song_data = self.macros.get(song_name)
-        macro_text = "\n".join(" " + line for line in song_data["macro"].split("\n"))
-        
-        total_time_sec = song_data.get("time", 155)
+    # Basic layout text highlighter
+    def update_basic_highlight(self, token_start, token_end):
+        self.macro_display.tag_remove("highlight", "1.0", tk.END)
+        self.macro_display.tag_add("highlight", f"1.0+{token_start}c", f"1.0+{token_end}c")
+        self.macro_display.see(f"1.0+{token_start}c")
 
+    # Macro execution engine logic
+    def run_macro_logic(self):
+        is_expert = self.layout_var.get() == "Expert"
+        song_name = self.song_selector.get()
+        
+        if is_expert:
+            song_data = self.macros.get(song_name)
+        else:
+            song_data = self.basic_macros.get(song_name)
+            
+        macro_text = "\n".join(" " + line for line in song_data["macro"].split("\n"))
         tokens = list(re.finditer(r'\[.*?\]|[^ \s]', macro_text))
         total_tokens = len(tokens)
-        
-        base_delay = total_time_sec / total_tokens if total_tokens > 0 else 0.25
 
-        t_m, t_s = divmod(int(total_time_sec), 60)
+        if is_expert:
+            total_time_sec = song_data.get("time", 155)
+            base_delay = total_time_sec / total_tokens if total_tokens > 0 else 0.25
+            t_m, t_s = divmod(int(total_time_sec), 60)
+        else:
+            base_delay = 0.35 
 
         for i, match in enumerate(tokens):
             if not self.macro_running: break
@@ -483,9 +580,12 @@ class PianoApp:
 
             token_str = match.group(0)
             
-            elapsed = (i / total_tokens) * total_time_sec
-            e_m, e_s = divmod(int(elapsed), 60)
-            self.root.after(0, self.update_progress_ui, (i/total_tokens)*100, f"{e_m:02d}:{e_s:02d} / {t_m:02d}:{t_s:02d}", match.start(), match.end())
+            if is_expert:
+                elapsed = (i / total_tokens) * total_time_sec
+                e_m, e_s = divmod(int(elapsed), 60)
+                self.root.after(0, self.update_progress_ui, (i/total_tokens)*100, f"{e_m:02d}:{e_s:02d} / {t_m:02d}:{t_s:02d}", match.start(), match.end())
+            else:
+                self.root.after(0, self.update_basic_highlight, match.start(), match.end())
 
             if token_str == '|':
                 pass 
@@ -504,19 +604,26 @@ class PianoApp:
             
             time.sleep(base_delay / multiplier)
         
-        self.root.after(0, self.update_progress_ui, 100, f"{t_m:02d}:{t_s:02d} / {t_m:02d}:{t_s:02d}", 0, 0)
-        self.macro_display.tag_remove("highlight", "1.0", tk.END)
+        if is_expert:
+            self.root.after(0, self.update_progress_ui, 100, f"{t_m:02d}:{t_s:02d} / {t_m:02d}:{t_s:02d}", 0, 0)
+        else:
+            self.macro_display.tag_remove("highlight", "1.0", tk.END)
+            
         self.macro_running = False
 
+    # Start automated macro playback
     def start_macro(self):
         if not self.macro_running:
             self.macro_running = True
             self.macro_paused = False
             
+            is_expert = self.layout_var.get() == "Expert"
             song_name = self.song_selector.get()
+            song_dict = self.macros if is_expert else self.basic_macros
+            
             self.macro_display.config(state=tk.NORMAL)
             self.macro_display.delete("1.0", tk.END)
-            macro_text = "\n".join(" " + line for line in self.macros[song_name]["macro"].split("\n"))
+            macro_text = "\n".join(" " + line for line in song_dict[song_name]["macro"].split("\n"))
             self.macro_display.insert(tk.END, macro_text, "center")
             
             self.macro_display.config(state=tk.DISABLED)
@@ -526,9 +633,11 @@ class PianoApp:
         else:
             self.macro_paused = False
 
+    # Toggle macro pause state
     def pause_macro(self):
         self.macro_paused = not self.macro_paused
 
+    # Halt macro execution and reset states
     def stop_macro(self):
         self.macro_running = False
         self.macro_paused = False
@@ -536,38 +645,51 @@ class PianoApp:
         self.time_label.config(text="00:00 / 00:00")
         self.macro_display.tag_remove("highlight", "1.0", tk.END)
 
+    # Dynamic visibility handling for layout elements
     def update_autoplay_visibility(self):
         if self.autoplay_enabled.get():
-            # Force Instrument to Piano and disable other RadioButtons
-            if self.instrument_var.get() != "Piano":
-                self.instrument_var.set("Piano")
-                self.change_instrument()
-                
-            for inst, rb in self.instrument_radios.items():
-                if inst != "Piano":
-                    rb.config(state=tk.DISABLED)
+            is_expert = self.layout_var.get() == "Expert"
 
-            # Repack the Autoplay widgets
+            if is_expert:
+                if self.instrument_var.get() != "Piano":
+                    self.instrument_var.set("Piano")
+                    self.change_instrument()
+                    
+                for inst, rb in self.instrument_radios.items():
+                    if inst != "Piano":
+                        rb.config(state=tk.DISABLED)
+
+                self.song_selector.config(values=list(self.macros.keys()))
+                self.progress_frame.pack(after=self.piano_wrapper, fill=tk.X, padx=20, pady=(0, 10))
+                self.tempo_label.pack(side=tk.RIGHT, padx=20)
+            else:
+                for rb in self.instrument_radios.values():
+                    rb.config(state=tk.NORMAL) 
+
+                self.song_selector.config(values=list(self.basic_macros.keys()))
+                self.progress_frame.pack_forget() 
+                self.tempo_label.pack_forget() 
+
+            self.song_selector.current(0)
+            self.on_song_select()
+
             self.macro_display.pack(before=self.piano_wrapper, pady=5)
-            self.progress_frame.pack(after=self.piano_wrapper, fill=tk.X, padx=20, pady=(0, 10))
             self.macro_frame.pack(side=tk.BOTTOM, fill=tk.X)
         else:
-            # Enable all instrument selections
             for rb in self.instrument_radios.values():
                 rb.config(state=tk.NORMAL)
 
-            # Hide the Autoplay widgets
             self.macro_display.pack_forget()
             self.progress_frame.pack_forget()
             self.macro_frame.pack_forget()
             self.stop_macro()
 
+    # Apply selected instrument audio files
     def change_instrument(self):
         selection = self.instrument_var.get()
         global SAMPLE_BASE_URL
         SAMPLE_BASE_URL = links[selection]
         
-        # FIX 1: Dynamically size window based on Layout Choice AND Instrument
         is_expert = self.layout_var.get() == "Expert"
         is_piano = selection == "Piano"
         
@@ -584,16 +706,17 @@ class PianoApp:
         
         self.status_label.config(text=f"{selection} Ready!")
 
+    # Audio playback trigger
     def play_note(self, note):
         if note in self.sounds:
             self.sounds[note].stop() 
             self.sounds[note].play()
 
+    # Application menubar configuration
     def create_menu(self):
         menubar = tk.Menu(self.root)
         self.file_menu = tk.Menu(menubar, tearoff=0)
         
-        # Adding Layout Dropdown inside File
         self.layout_menu = tk.Menu(self.file_menu, tearoff=0)
         self.layout_menu.add_radiobutton(label="Basic", variable=self.layout_var, value="Basic", command=self.change_layout)
         self.layout_menu.add_radiobutton(label="Expert", variable=self.layout_var, value="Expert", command=self.change_layout)
@@ -607,6 +730,7 @@ class PianoApp:
         menubar.add_cascade(label="File", menu=self.file_menu)
         self.root.config(menu=menubar)
 
+    # Master volume adjustment window
     def open_settings(self):
         win = tk.Toplevel(self.root)
         win.title("Volume Settings")
@@ -617,12 +741,14 @@ class PianoApp:
         slider.set(self.master_volume * 100)
         slider.pack()
 
+    # Update volume properties of preloaded sounds
     def change_volume(self, val):
         self.master_volume = int(val) / 100
         for inst_sounds in self.sound_cache.values():
             for sound in inst_sounds.values():
                 sound.set_volume(self.master_volume)
 
+    # Retrieve and bind icon image from URL
     def set_app_icon(self):
         try:
             response = requests.get(ICON_URL, timeout=5)
@@ -632,6 +758,7 @@ class PianoApp:
                 self.root.iconphoto(False, self.app_icon)
         except: pass
 
+# Main initialization sequence logic
 def launch_app():
     main_root = tk.Tk()
     PianoApp(main_root)
