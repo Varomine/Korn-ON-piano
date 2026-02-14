@@ -1,0 +1,4 @@
+requests
+pygame
+numpy
+Pillow
