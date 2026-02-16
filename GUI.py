@@ -27,15 +27,15 @@ ICON_URL = "https://github.com/Varomine/Korn-ON-piano/blob/main/images/korn.PNG?
 
 SAMPLE_BASE_URL = link1
 NOTES_MAPPING = {
-    'C5': 'C5',   'C#5': 'Db5',  'D5': 'D5',   'D#5': 'Eb5',
-    'E5': 'E5',   'F5': 'F5',    'F#5': 'Gb5', 'G5': 'G5',
-    'G#5': 'Ab5', 'A5': 'A5',    'A#5': 'Bb5', 'B5': 'B5',
-    'C4': 'C4', 'C#4': 'Db4', 'D4': 'D4', 'D#4': 'Eb4',
-    'E4': 'E4', 'F4': 'F4', 'F#4': 'Gb4', 'G4': 'G4',
-    'G#4': 'Ab4', 'A4': 'A4', 'A#4': 'Bb4', 'B4': 'B4',
-    'C3': 'C3',   'C#3': 'Db3',  'D3': 'D3',   'D#3': 'Eb3',
-    'E3': 'E3',   'F3': 'F3',    'F#3': 'Gb3', 'G3': 'G3',
-    'G#3': 'Ab3', 'A3': 'A3',    'A#3': 'Bb3', 'B3': 'B3',
+    'C5': 'C5','C#5': 'Db5','D5': 'D5','D#5': 'Eb5',
+    'E5': 'E5','F5': 'F5','F#5': 'Gb5','G5': 'G5',
+    'G#5': 'Ab5','A5': 'A5','A#5': 'Bb5','B5': 'B5',
+    'C4': 'C4','C#4': 'Db4', 'D4': 'D4','D#4': 'Eb4',
+    'E4': 'E4','F4': 'F4', 'F#4': 'Gb4','G4': 'G4',
+    'G#4': 'Ab4','A4': 'A4', 'A#4': 'Bb4','B4': 'B4',
+    'C3': 'C3','C#3': 'Db3','D3': 'D3','D#3': 'Eb3',
+    'E3': 'E3','F3': 'F3','F#3': 'Gb3','G3': 'G3',
+    'G#3': 'Ab3','A3': 'A3','A#3': 'Bb3','B3': 'B3',
 }
 
 class PreLoader:
@@ -47,8 +47,7 @@ class PreLoader:
         self.root.configure(bg='#1a1a1a')
         self.root.eval('tk::PlaceWindow . center')
 
-        tk.Label(self.root, text="Checking audio...", 
-                 fg='#00ADB5', bg='#1a1a1a', font=("Tahoma", 10, "bold")).pack(pady=20)
+        tk.Label(self.root, text="Checking audio...", fg='#00ADB5', bg='#1a1a1a', font=("Tahoma", 10, "bold")).pack(pady=20)
 
         self.progress = ttk.Progressbar(self.root, orient=tk.HORIZONTAL, length=300, mode='determinate')
         self.progress.pack(pady=10)
@@ -85,7 +84,7 @@ class PreLoader:
 
         total = len(all_tasks)
  
-        with concurrent.futures.ThreadPoolExecutor(max_workers=216) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=36) as executor:
             futures = [executor.submit(self.download_task, task) for task in all_tasks]
             done_count = 0
             for _ in concurrent.futures.as_completed(futures):
@@ -116,16 +115,12 @@ class SplashScreen:
         self.img_url = ICON_URL
         self.display_logo()
 
-        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), 
-                 fg='#00ADB5', bg='#1a1a1a').pack(pady=10)
+        tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 24, "bold"), fg='#00ADB5', bg='#1a1a1a').pack(pady=10)
 
-        self.label_status = tk.Label(self.root, text="Preparing application...", 
-                                     font=("Tahoma", 11), fg='white', bg='#1a1a1a')
+        self.label_status = tk.Label(self.root, text="Preparing application...", font=("Tahoma", 11), fg='white', bg='#1a1a1a')
         self.label_status.pack(pady=5)
 
-        self.skip_btn = tk.Button(self.root, text="Skip Intro ▶", font=("Tahoma", 10, "bold"), 
-                                  bg='#333333', fg='white', activebackground='#00ADB5', 
-                                  activeforeground='black', command=self.finish, bd=0, padx=15, pady=5)
+        self.skip_btn = tk.Button(self.root, text="Skip Intro ▶", font=("Tahoma", 10, "bold"), bg='#333333', fg='white', activebackground='#00ADB5', activeforeground='black', command=self.finish, bd=0, padx=15, pady=5)
         self.skip_btn.pack(pady=10)
 
         self.audio_url = "https://github.com/Varomine/Korn-ON-piano/raw/refs/heads/sound/start.MP3"
@@ -157,7 +152,6 @@ class SplashScreen:
                 pygame.mixer.music.load(audio_data)
                 pygame.mixer.music.set_volume(0.8)
                 pygame.mixer.music.play()
-                
             
             self.check_music_status()
         except:
@@ -186,7 +180,6 @@ class PianoApp:
 
         self.master_volume = 1.0
         self.create_menu()
-        # ----------------------------------------
 
         tk.Label(self.root, text="KORN-ON! PIANO", font=("Helvetica", 30, "bold"), 
                  bg='#121212', fg='#00ADB5').pack(pady=(20, 10))
@@ -248,9 +241,7 @@ class PianoApp:
 
         tk.Label(win, text="Master Volume", fg='white', bg='#121212', font=("Arial", 12)).pack(pady=10)
         
-        slider = tk.Scale(win, from_=0, to=100, orient=tk.HORIZONTAL,
-                          bg='#121212', fg='white', length=200,
-                          command=self.change_volume)
+        slider = tk.Scale(win, from_=0, to=100, orient=tk.HORIZONTAL,bg='#121212', fg='white', length=200,command=self.change_volume)
         slider.set(self.master_volume * 100)
         slider.pack()
 
@@ -265,11 +256,14 @@ class PianoApp:
         win.configure(bg='#121212')
         def music(song):
             self.text_area['text'] = song
+
         self.bt_river_flow_in_you = tk.Button(win, text="River Flows in You - Yiruma", bg='#00ADB5', fg='black', font=("Arial", 12, "bold"),command=lambda: music(sheet["rv"]))
         self.bt_river_flow_in_you.place(x=25,y=25)
+
         self.Happy_Birthday_to_You = tk.Button(win, text="Happy Birthday to You", bg='#00ADB5', fg='black', font=("Arial", 12, "bold"),command=lambda: music(sheet["bd"]))
         self.Happy_Birthday_to_You.place(x=250,y=25)
-        self.text_area = tk.Label(win, text="(Sheet music content goes here)", bg='#121212', fg='white', font=("Arial", 12),wraplength=950, justify=tk.LEFT,pady=30)
+
+        self.text_area = tk.Label(win, text="(Select a song first)", bg='#121212', fg='white', font=("Arial", 12),wraplength=950, justify=tk.LEFT,pady=30)
         self.text_area.place(x=25,y=70)
         
 
